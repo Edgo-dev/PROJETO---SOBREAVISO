@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Obra · {{ obra.ativo.nome_site }}{% endblock %}
+{% block page_title %}Detalhe da obra{% endblock %}
+
+{% block content %}
+<div class="detail-card">
+    <header class="detail-header">
+        <div>
+            <h2 class="detail-title">{{ obra.ativo.nome_site }}</h2>
+            <p class="detail-subtitle">{{ obra.ativo.ativo_prisma }} · {{ obra.ativo.cidade }}/{{ obra.ativo.uf }}</p>
+        </div>
+        <div class="detail-status">
+            <span class="status-pill situacao-{{ obra.situacao }}">
+                <span class="status-dot"></span> {{ obra.situacao_label }}
+            </span>
+        </div>
+    </header>
+
+    <h3 class="detail-section-title">Descrição da obra</h3>
+    <p class="obra-descricao-bloco">{{ obra.descricao|linebreaksbr }}</p>
+
+    <h3 class="detail-section-title">Cronograma</h3>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Data de início</dt><dd>{{ obra.data_inicio|date:"d/m/Y" }}</dd></div>
+        <div class="detail-item"><dt>Data fim planejada</dt><dd>{{ obra.data_fim_planejada|date:"d/m/Y" }}</dd></div>
+        <div class="detail-item"><dt>Data fim real</dt><dd>{{ obra.data_fim_real|date:"d/m/Y"|default:"—" }}</dd></div>
+        <div class="detail-item"><dt>Responsável</dt><dd>{{ obra.responsavel|default:"—" }}</dd></div>
+    </dl>
+
+    <h3 class="detail-section-title">Ativo vinculado</h3>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Ativo Prisma</dt><dd>{{ obra.ativo.ativo_prisma }}</dd></div>
+        <div class="detail-item"><dt>Nome do site</dt><dd>{{ obra.ativo.nome_site }}</dd></div>
+        <div class="detail-item detail-item-wide"><dt>Endereço</dt><dd>{{ obra.ativo.endereco }}</dd></div>
+        <div class="detail-item"><dt>Cidade</dt><dd>{{ obra.ativo.cidade }}</dd></div>
+        <div class="detail-item"><dt>UF</dt><dd>{{ obra.ativo.uf }}</dd></div>
+        <div class="detail-item"><dt>Regional</dt><dd>{{ obra.ativo.regional }}</dd></div>
+        <div class="detail-item"><dt>Tipo de imóvel</dt><dd>{{ obra.ativo.tipo_imovel|default:"—" }}</dd></div>
+    </dl>
+
+    {% if obra.observacoes %}
+    <h3 class="detail-section-title">Observações</h3>
+    <p class="obra-descricao-bloco">{{ obra.observacoes|linebreaksbr }}</p>
+    {% endif %}
+
+    <div class="detail-actions">
+        <a href="{% url 'chamados:obra_update' obra.pk %}" class="btn btn-primary">Editar</a>
+        <a href="{% url 'chamados:ativo_detail' obra.ativo.pk %}" class="btn btn-secondary">Ver ativo</a>
+        <a href="{% url 'chamados:obras_list' %}" class="btn btn-link">Voltar para a listagem</a>
+    </div>
+</div>
+{% endblock %}

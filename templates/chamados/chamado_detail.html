@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Chamado {{ chamado.numero_os }}{% endblock %}
+{% block page_title %}Chamado {{ chamado.numero_os }}{% endblock %}
+
+{% block content %}
+<div class="detail-card">
+    <header class="detail-header">
+        <div>
+            <h2 class="detail-title">OS {{ chamado.numero_os }}</h2>
+            <p class="detail-subtitle">Aberto em {{ chamado.data_abertura|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="detail-status">
+            <span class="status-pill status-{{ chamado.status }}">{{ chamado.get_status_display }}</span>
+        </div>
+    </header>
+
+    <h3 class="detail-section-title">Dados do chamado</h3>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Numero OS</dt><dd>{{ chamado.numero_os }}</dd></div>
+        <div class="detail-item"><dt>Status</dt><dd>{{ chamado.get_status_display }}</dd></div>
+        <div class="detail-item"><dt>Data de abertura</dt><dd>{{ chamado.data_abertura|date:"d/m/Y H:i" }}</dd></div>
+        <div class="detail-item"><dt>Fornecedor</dt><dd>{{ chamado.fornecedor.nome|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Solicitante</dt><dd>{{ chamado.solicitante|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Contato do solicitante</dt><dd>{{ chamado.contato_solicitante|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Denominacao</dt><dd>{{ chamado.denominacao|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Acao tomada</dt><dd>{{ chamado.acao_tomada|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Command Center</dt><dd>{{ chamado.command_center|default:"-" }}</dd></div>
+        <div class="detail-item detail-item-wide"><dt>Dados portaria / retirada de chave</dt><dd>{{ chamado.dados_portaria_retirada_chave|default:"-"|linebreaksbr }}</dd></div>
+        <div class="detail-item detail-item-wide"><dt>Detalhamento da situacao</dt><dd>{{ chamado.detalhamento_situacao|default:"-"|linebreaksbr }}</dd></div>
+        <div class="detail-item"><dt>Criado em</dt><dd>{{ chamado.criado_em|date:"d/m/Y H:i" }}</dd></div>
+        <div class="detail-item"><dt>Atualizado em</dt><dd>{{ chamado.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+    </dl>
+
+    <h3 class="detail-section-title">Ativo vinculado</h3>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Ativo Prisma</dt><dd>{{ chamado.ativo.ativo_prisma }}</dd></div>
+        <div class="detail-item"><dt>Nome do site</dt><dd>{{ chamado.ativo.nome_site }}</dd></div>
+        <div class="detail-item detail-item-wide"><dt>Endereco</dt><dd>{{ chamado.ativo.endereco }}</dd></div>
+        <div class="detail-item"><dt>Cidade</dt><dd>{{ chamado.ativo.cidade }}</dd></div>
+        <div class="detail-item"><dt>UF</dt><dd>{{ chamado.ativo.uf }}</dd></div>
+        <div class="detail-item"><dt>Regional</dt><dd>{{ chamado.ativo.regional }}</dd></div>
+        <div class="detail-item"><dt>Tipo de imovel</dt><dd>{{ chamado.ativo.tipo_imovel|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Tipo site/SLA</dt><dd>{{ chamado.ativo.tipo_site_sla|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Lider coordenacao</dt><dd>{{ chamado.ativo.lider_coordenacao|default:"-" }}</dd></div>
+    </dl>
+
+    <section class="report-history">
+        <div class="section-header">
+            <h3 class="detail-section-title">Atualizações do chamado</h3>
+            <a href="{% url 'chamados:atualizar_report_form' chamado.pk %}" class="btn btn-primary">Atualizar report</a>
+        </div>
+
+        {% if atualizacoes %}
+        <div class="history-list">
+            {% for atualizacao in atualizacoes %}
+            <article class="history-item">
+                <header class="history-header">
+                    <div>
+                        <strong>{{ atualizacao.criado_em|date:"d/m/Y H:i" }}</strong>
+                        <span>{{ atualizacao.get_tipo_evento_display }}</span>
+                    </div>
+                    <span class="status-pill status-{{ atualizacao.status_resultante }}">{{ atualizacao.get_status_resultante_display }}</span>
+                </header>
+                <p class="history-user">Usuário: {{ atualizacao.criado_por.get_username|default:"-" }}</p>
+                <p class="history-text">{{ atualizacao.texto_atualizacao|linebreaksbr }}</p>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">Nenhuma atualização registrada até o momento.</p>
+        {% endif %}
+    </section>
+
+    <section class="preview-card detail-preview-card">
+        <div class="preview-header">
+            <h3 class="preview-title">Texto WhatsApp atual</h3>
+            <button type="button" class="btn btn-primary" data-copy-target="texto-whatsapp-detalhe">Copiar texto WhatsApp</button>
+        </div>
+        <pre id="texto-whatsapp-detalhe" class="whatsapp-preview">{{ texto_whatsapp }}</pre>
+    </section>
+
+    <div class="detail-actions">
+        <a href="{% url 'chamados:chamados_list' %}" class="btn btn-secondary">Voltar para listagem</a>
+        <a href="{% url 'chamados:ativo_detail' chamado.ativo.pk %}" class="btn btn-link">Ver ativo</a>
+    </div>
+</div>
+{% endblock %}

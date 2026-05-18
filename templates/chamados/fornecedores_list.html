@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Contato Fornecedor{% endblock %}
+{% block page_title %}{% endblock %}
+
+{% block content %}
+<div class="forn-page">
+
+    <header class="forn-header">
+        <div class="forn-header-text">
+            <h1 class="forn-title">
+                <span class="forn-title-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                Contato Fornecedor
+            </h1>
+            <p class="forn-subtitle">Gerencie supervisores, empresas e regiões de atendimento.</p>
+        </div>
+
+        <div class="forn-header-actions">
+            <a href="{% url 'chamados:fornecedores_template_download' %}" class="btn-ghost" title="Baixar planilha modelo em branco">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Baixar modelo
+            </a>
+            <a href="{% url 'chamados:fornecedores_import' %}" class="btn-ghost" title="Importar planilha .xlsx">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importar planilha
+            </a>
+            <a href="{% url 'chamados:fornecedor_create' %}" class="btn-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo Supervisor
+            </a>
+        </div>
+    </header>
+
+    <section class="forn-stats">
+        <div class="forn-stat">
+            <span class="forn-stat-icon is-purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            </span>
+            <div class="forn-stat-text">
+                <span class="forn-stat-label">Supervisores</span>
+                <strong class="forn-stat-value">{{ total }}</strong>
+            </div>
+        </div>
+        <div class="forn-stat">
+            <span class="forn-stat-icon is-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <div class="forn-stat-text">
+                <span class="forn-stat-label">Ativos</span>
+                <strong class="forn-stat-value">{{ stats.ativos }}</strong>
+            </div>
+        </div>
+        <div class="forn-stat">
+            <span class="forn-stat-icon is-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </span>
+            <div class="forn-stat-text">
+                <span class="forn-stat-label">Inativos</span>
+                <strong class="forn-stat-value">{{ stats.inativos }}</strong>
+            </div>
+        </div>
+        <div class="forn-stat">
+            <span class="forn-stat-icon is-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+            </span>
+            <div class="forn-stat-text">
+                <span class="forn-stat-label">Empresas</span>
+                <strong class="forn-stat-value">{{ stats.empresas }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <form method="get" class="forn-filters" data-auto-submit>
+        <div class="forn-filter forn-filter-search">
+            <span class="forn-filter-search-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input type="search" id="q" name="q" value="{{ filtros.q }}" placeholder="Buscar por nome, telefone, e-mail, empresa ou estado..." data-auto-submit-input>
+        </div>
+        <div class="forn-filter">
+            <input type="text" id="empresa" name="empresa" value="{{ filtros.empresa }}" placeholder="Empresa" data-auto-submit-input>
+        </div>
+        <div class="forn-filter forn-filter-narrow">
+            <input type="text" id="estado" name="estado" value="{{ filtros.estado }}" placeholder="UF" maxlength="2" data-auto-submit-input>
+        </div>
+        <div class="forn-filter">
+            <select id="ativo" name="ativo" data-auto-submit-input>
+                <option value="todos" {% if filtros.ativo == "todos" %}selected{% endif %}>Todos os status</option>
+                <option value="sim" {% if filtros.ativo == "sim" %}selected{% endif %}>Apenas ativos</option>
+                <option value="nao" {% if filtros.ativo == "nao" %}selected{% endif %}>Apenas inativos</option>
+            </select>
+        </div>
+        <a href="{% url 'chamados:fornecedores_list' %}" class="forn-filter-clear" title="Limpar todos os filtros">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Limpar
+        </a>
+    </form>
+
+    <div class="forn-table-card">
+        <table class="forn-table">
+            <thead>
+                <tr>
+                    <th>Supervisor</th>
+                    <th>Empresa</th>
+                    <th>Telefone</th>
+                    <th>Estados atendidos</th>
+                    <th>Status</th>
+                    <th class="forn-actions-head">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fornecedor in fornecedores %}
+                <tr>
+                    <td>
+                        <div class="forn-name">
+                            <span class="forn-name-avatar">{{ fornecedor.inicial }}</span>
+                            <div class="forn-name-text">
+                                <strong>{{ fornecedor.nome }}</strong>
+                                <small>{{ fornecedor.email|default:"—" }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ fornecedor.empresa|default:"—" }}</td>
+                    <td class="forn-mono">{{ fornecedor.telefone|default:"—" }}</td>
+                    <td>
+                        {% if fornecedor.estados_atendidos_list %}
+                        <div class="uf-chips">
+                            {% for uf in fornecedor.estados_atendidos_list %}
+                            <span class="uf-chip">{{ uf }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span class="forn-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if fornecedor.ativo %}
+                        <span class="status-pill status-on">
+                            <span class="status-dot"></span> Ativo
+                        </span>
+                        {% else %}
+                        <span class="status-pill status-off">
+                            <span class="status-dot"></span> Inativo
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="forn-actions">
+                            <a href="{% url 'chamados:fornecedor_detail' fornecedor.pk %}" class="icon-btn" title="Ver detalhes">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </a>
+                            <a href="{% url 'chamados:fornecedor_update' fornecedor.pk %}" class="icon-btn" title="Editar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="forn-empty">
+                            <span class="forn-empty-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </span>
+                            <p class="forn-empty-title">Nenhum supervisor encontrado</p>
+                            <small class="forn-empty-hint">Ajuste os filtros acima ou importe sua planilha para começar.</small>
+                            <div class="forn-empty-actions">
+                                <a href="{% url 'chamados:fornecedores_import' %}" class="btn-ghost">Importar planilha</a>
+                                <a href="{% url 'chamados:fornecedor_create' %}" class="btn-cta">+ Novo Supervisor</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Anterior</a>
+        {% endif %}
+        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Próxima</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

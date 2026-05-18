@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<form method="post" class="form-card" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <h2 class="form-section-title">Local da obra</h2>
+    <div class="form-grid">
+        <div class="form-field form-field-wide">
+            <label for="{{ form.ativo.id_for_label }}">Ativo *</label>
+            {{ form.ativo }}
+            {% if form.ativo.errors %}<small class="field-error">{{ form.ativo.errors|join:" " }}</small>{% endif %}
+        </div>
+    </div>
+
+    <h2 class="form-section-title">Cronograma</h2>
+    <div class="form-grid">
+        <div class="form-field">
+            <label for="{{ form.data_inicio.id_for_label }}">Data de início *</label>
+            {{ form.data_inicio }}
+            {% if form.data_inicio.errors %}<small class="field-error">{{ form.data_inicio.errors|join:" " }}</small>{% endif %}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.data_fim_planejada.id_for_label }}">Data fim planejada *</label>
+            {{ form.data_fim_planejada }}
+            {% if form.data_fim_planejada.errors %}<small class="field-error">{{ form.data_fim_planejada.errors|join:" " }}</small>{% endif %}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.data_fim_real.id_for_label }}">Data fim real</label>
+            {{ form.data_fim_real }}
+            <small class="field-hint">Preencha apenas quando a obra for efetivamente concluída.</small>
+        </div>
+        <div class="form-field form-field-checkbox">
+            <label for="{{ form.ativa.id_for_label }}">
+                {{ form.ativa }} Obra ativa
+            </label>
+        </div>
+    </div>
+
+    <h2 class="form-section-title">Descrição da obra</h2>
+    <div class="form-grid">
+        <div class="form-field form-field-wide">
+            <label for="{{ form.descricao.id_for_label }}">O que está sendo feito? *</label>
+            {{ form.descricao }}
+            <small class="field-hint">Esta descrição é exibida no alerta de obra durante a abertura de chamados.</small>
+            {% if form.descricao.errors %}<small class="field-error">{{ form.descricao.errors|join:" " }}</small>{% endif %}
+        </div>
+        <div class="form-field form-field-wide">
+            <label for="{{ form.responsavel.id_for_label }}">Responsável pela obra</label>
+            {{ form.responsavel }}
+        </div>
+        <div class="form-field form-field-wide">
+            <label for="{{ form.observacoes.id_for_label }}">Observações</label>
+            {{ form.observacoes }}
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'chamados:obras_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

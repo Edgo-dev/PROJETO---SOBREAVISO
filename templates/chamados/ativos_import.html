@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Importar parque imobiliário{% endblock %}
+{% block page_title %}Importar parque imobiliário{% endblock %}
+
+{% block content %}
+<p class="subtitle">
+    Envie qualquer planilha .xlsx do parque imobiliário. O sistema reconhece as colunas relevantes pelo nome do cabeçalho (em qualquer ordem) e ignora as demais.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="form-card" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="form-grid form-grid-single">
+        <div class="form-field form-field-wide">
+            <label for="{{ form.arquivo.id_for_label }}">{{ form.arquivo.label }} *</label>
+            {{ form.arquivo }}
+            <small class="field-hint">Colunas reconhecidas (sinônimos aceitos): Ativo Prisma, Nome do Site / Denominação / Nomenclatura Prisma, Endereço, Cidade, UF, Região / Regional, Imóvel / Tipo de Imóvel, Tipo Atendimento / SLA, Líder coordenação, Ativo/Status.</small>
+            {% if form.arquivo.errors %}<small class="field-error">{{ form.arquivo.errors|join:" " }}</small>{% endif %}
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Importar</button>
+        <a href="{% url 'chamados:ativos_list' %}" class="btn btn-secondary">Voltar para Matriz de Ativos</a>
+    </div>
+</form>
+
+{% if resultado %}
+<section class="detail-card detail-preview-card">
+    <h2 class="detail-title">Resultado da importação</h2>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Total de linhas lidas</dt><dd>{{ resultado.total_linhas }}</dd></div>
+        <div class="detail-item"><dt>Ativos criados</dt><dd>{{ resultado.criados }}</dd></div>
+        <div class="detail-item"><dt>Ativos atualizados</dt><dd>{{ resultado.atualizados }}</dd></div>
+        <div class="detail-item"><dt>Linhas ignoradas</dt><dd>{{ resultado.ignorados }}</dd></div>
+        {% if resultado.cidades_inferidas_do_endereco %}
+        <div class="detail-item">
+            <dt>Cidades inferidas do endereço</dt>
+            <dd>{{ resultado.cidades_inferidas_do_endereco }}
+                <small class="field-hint" style="display:block; margin-top:2px;">Linhas com coluna Cidade vazia onde o sistema usou o último segmento do endereço como cidade. Recomenda-se revisar manualmente.</small>
+            </dd>
+        </div>
+        {% endif %}
+    </dl>
+
+    {% if resultado.campos_vazios %}
+    <h3 class="detail-section-title">Qualidade dos dados importados</h3>
+    <p class="field-hint">Ativos foram salvos mesmo com alguns campos vazios. Os contadores abaixo mostram quantos ativos têm cada campo em branco — use a Matriz de Ativos para filtrar e corrigir.</p>
+    <dl class="detail-grid">
+        {% for campo, qtd in resultado.campos_vazios.items %}
+        <div class="detail-item">
+            <dt>{{ campo|title }}</dt>
+            <dd><strong>{{ qtd }}</strong> ativo{{ qtd|pluralize }} sem este campo</dd>
+        </div>
+        {% endfor %}
+    </dl>
+    {% endif %}
+
+    {% if resultado.mapeamento %}
+    <h3 class="detail-section-title">Mapeamento de colunas detectado</h3>
+    <p class="field-hint">As colunas abaixo foram identificadas na sua planilha e usadas para alimentar o sistema. Confira se está coerente com o que você esperava.</p>
+    <dl class="detail-grid mapeamento-grid">
+        {% for campo, header in resultado.mapeamento.items %}
+        <div class="detail-item">
+            <dt>{{ campo }}</dt>
+            <dd>{{ header }}</dd>
+        </div>
+        {% endfor %}
+    </dl>
+    {% endif %}
+
+    {% if resultado.cabecalhos_ignorados %}
+    <h3 class="detail-section-title">Colunas ignoradas</h3>
+    <p class="field-hint">As colunas abaixo existem na sua planilha mas não correspondem a nenhum campo do sistema — foram simplesmente ignoradas.</p>
+    <div class="ignored-columns">
+        {% for header in resultado.cabecalhos_ignorados %}
+        <span class="ignored-column-chip">{{ header }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if resultado.erros %}
+    <h3 class="detail-section-title">Erros</h3>
+    <ul class="import-errors">
+        {% for erro in resultado.erros %}
+        <li>{{ erro }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

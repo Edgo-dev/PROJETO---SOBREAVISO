@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ fornecedor.nome }}{% endblock %}
+{% block page_title %}Supervisor{% endblock %}
+
+{% block content %}
+<div class="detail-card">
+    <header class="detail-header">
+        <div>
+            <h2 class="detail-title">{{ fornecedor.nome }}</h2>
+            <p class="detail-subtitle">{{ fornecedor.email|default:"E-mail não informado" }}</p>
+        </div>
+        <div class="detail-status">
+            {% if fornecedor.ativo %}
+            <span class="status-pill status-on">Ativo</span>
+            {% else %}
+            <span class="status-pill status-off">Inativo</span>
+            {% endif %}
+        </div>
+    </header>
+
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Nome</dt><dd>{{ fornecedor.nome }}</dd></div>
+        <div class="detail-item"><dt>Empresa</dt><dd>{{ fornecedor.empresa|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Telefone</dt><dd>{{ fornecedor.telefone|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>E-mail</dt><dd>{{ fornecedor.email|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Estados atendidos</dt><dd>{{ fornecedor.estados_atendidos|default:"-" }}</dd></div>
+        <div class="detail-item"><dt>Status</dt><dd>{% if fornecedor.ativo %}Ativo{% else %}Inativo{% endif %}</dd></div>
+        <div class="detail-item"><dt>Criado em</dt><dd>{{ fornecedor.criado_em|date:"d/m/Y H:i" }}</dd></div>
+        <div class="detail-item"><dt>Atualizado em</dt><dd>{{ fornecedor.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
+        <div class="detail-item"><dt>Chamados vinculados</dt><dd>{{ quantidade_chamados }}</dd></div>
+    </dl>
+
+    <h3 class="detail-section-title">Últimos chamados vinculados</h3>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Número da OS</th>
+                    <th>Ativo</th>
+                    <th>Status</th>
+                    <th>Data de abertura</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chamado in ultimos_chamados %}
+                <tr>
+                    <td>{{ chamado.numero_os }}</td>
+                    <td>{{ chamado.ativo.ativo_prisma }} - {{ chamado.ativo.nome_site }}</td>
+                    <td><span class="status-pill status-{{ chamado.status }}">{{ chamado.get_status_display }}</span></td>
+                    <td>{{ chamado.data_abertura|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="empty">Nenhum chamado vinculado a este fornecedor.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="detail-actions">
+        <a href="{% url 'chamados:fornecedor_update' fornecedor.pk %}" class="btn btn-primary">Editar</a>
+        <a href="{% url 'chamados:fornecedores_list' %}" class="btn btn-secondary">Voltar</a>
+    </div>
+</div>
+{% endblock %}

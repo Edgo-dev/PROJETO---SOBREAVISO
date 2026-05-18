@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Sobreaviso{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260517-13">
+</head>
+<body>
+    <div class="layout" id="app-layout">
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Mostrar ou ocultar menu" aria-expanded="true" aria-controls="app-sidebar">
+            <svg class="icon-hamburger" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <svg class="icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="sidebar-backdrop" data-sidebar-backdrop aria-hidden="true"></div>
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-brand">
+                <span class="sidebar-brand-mark">SA</span>
+                <span class="sidebar-brand-text">Sobreaviso</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'chamados:home' %}" class="sidebar-link{% if request.resolver_match.url_name == 'home' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </span>
+                    <span>Início</span>
+                </a>
+                <a href="{% url 'chamados:ativos_list' %}" class="sidebar-link{% if request.resolver_match.url_name == 'ativos_list' or request.resolver_match.url_name == 'ativo_detail' or request.resolver_match.url_name == 'ativo_create' or request.resolver_match.url_name == 'ativo_update' or request.resolver_match.url_name == 'ativos_import' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    </span>
+                    <span>Matriz de Ativos</span>
+                </a>
+                <a href="{% url 'chamados:fornecedores_list' %}" class="sidebar-link{% if request.resolver_match.url_name == 'fornecedores_list' or request.resolver_match.url_name == 'fornecedor_detail' or request.resolver_match.url_name == 'fornecedor_create' or request.resolver_match.url_name == 'fornecedor_update' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
+                    <span>Contato Fornecedor</span>
+                </a>
+                <a href="{% url 'chamados:obras_list' %}" class="sidebar-link{% if request.resolver_match.url_name == 'obras_list' or request.resolver_match.url_name == 'obra_create' or request.resolver_match.url_name == 'obra_detail' or request.resolver_match.url_name == 'obra_update' or request.resolver_match.url_name == 'obras_import' or request.resolver_match.url_name == 'obras_template_download' or request.resolver_match.url_name == 'consolidado_obras' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20"/><path d="M3 22V11l9-6 9 6v11"/><path d="M9 22v-7h6v7"/></svg>
+                    </span>
+                    <span>Consolidado Obras</span>
+                </a>
+                <a href="{% url 'chamados:chamado_create' %}" class="sidebar-link{% if request.resolver_match.url_name == 'chamado_create' or request.resolver_match.url_name == 'chamados_list' or request.resolver_match.url_name == 'chamado_detail' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </span>
+                    <span>Novo Chamado</span>
+                </a>
+                <a href="{% url 'chamados:atualizar_report_list' %}" class="sidebar-link{% if request.resolver_match.url_name == 'atualizar_report_list' or request.resolver_match.url_name == 'atualizar_report_form' or request.resolver_match.url_name == 'atualizar_report_exportar_excel' %} sidebar-link-active{% endif %}">
+                    <span class="sidebar-link-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                    </span>
+                    <span>Atualizar Report</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <div class="sidebar-profile" aria-label="Usuario logado">
+                    <span class="sidebar-profile-avatar" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a1f72" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </span>
+                    <span class="sidebar-profile-name">{{ user.get_full_name|default:user.username }}</span>
+                </div>
+                <form action="{% url 'chamados:logout' %}" method="post" class="sidebar-logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="sidebar-logout">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span>Sair</span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="main-header">
+                <h1 class="main-title">{% block page_title %}{% endblock %}</h1>
+            </header>
+            <section class="main-content">
+                {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                    <li class="message message-{{ message.tags|default:'info' }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+    <script src="{% static 'js/app.js' %}?v=20260516-18"></script>
+</body>
+</html>

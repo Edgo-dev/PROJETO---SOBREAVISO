@@ -1,0 +1,45 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Banco local
+db.sqlite3
+db.sqlite3-journal
+
+# Variaveis de ambiente
+.env
+.env.*
+# Preserva o template seguro (sem segredos)
+!.env.example
+
+# Coleta de estaticos
+staticfiles/
+
+# Uploads
+media/
+
+# IDEs / Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Coverage / testes
+.coverage
+htmlcov/
+.pytest_cache/

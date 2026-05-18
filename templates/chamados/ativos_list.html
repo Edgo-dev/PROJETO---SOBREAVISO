@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Matriz de Ativos{% endblock %}
+{% block page_title %}Matriz de Ativos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-meta">
+        <span class="badge-total">{{ total }} ativo{{ total|pluralize }} encontrado{{ total|pluralize }}</span>
+    </div>
+    <div class="action-buttons">
+        <a href="{% url 'chamados:ativos_import' %}" class="btn btn-secondary">Importar parque imobiliário</a>
+        <a href="{% url 'chamados:ativo_create' %}" class="btn btn-primary">+ Novo ativo</a>
+    </div>
+</div>
+
+{% if tem_problemas_de_qualidade %}
+<div class="quality-shortcuts">
+    <span class="quality-shortcuts-label">Curadoria rápida:</span>
+    {% if contadores_qualidade.cidade %}
+    <a href="?sem=cidade" class="quality-chip {% if filtros.sem == 'cidade' %}is-active{% endif %}">
+        Sem Cidade <strong>{{ contadores_qualidade.cidade }}</strong>
+    </a>
+    {% endif %}
+    {% if contadores_qualidade.uf %}
+    <a href="?sem=uf" class="quality-chip {% if filtros.sem == 'uf' %}is-active{% endif %}">
+        Sem UF <strong>{{ contadores_qualidade.uf }}</strong>
+    </a>
+    {% endif %}
+    {% if contadores_qualidade.regional %}
+    <a href="?sem=regional" class="quality-chip {% if filtros.sem == 'regional' %}is-active{% endif %}">
+        Sem Regional <strong>{{ contadores_qualidade.regional }}</strong>
+    </a>
+    {% endif %}
+    {% if contadores_qualidade.endereco %}
+    <a href="?sem=endereco" class="quality-chip {% if filtros.sem == 'endereco' %}is-active{% endif %}">
+        Sem Endereço <strong>{{ contadores_qualidade.endereco }}</strong>
+    </a>
+    {% endif %}
+    {% if contadores_qualidade.nome_site %}
+    <a href="?sem=nome_site" class="quality-chip {% if filtros.sem == 'nome_site' %}is-active{% endif %}">
+        Sem Nome do Site <strong>{{ contadores_qualidade.nome_site }}</strong>
+    </a>
+    {% endif %}
+    {% if contadores_qualidade.tipo_imovel %}
+    <a href="?sem=tipo_imovel" class="quality-chip {% if filtros.sem == 'tipo_imovel' %}is-active{% endif %}">
+        Sem Imóvel <strong>{{ contadores_qualidade.tipo_imovel }}</strong>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<form method="get" class="filters filter-panel" data-auto-submit>
+    {# Preserva o filtro 'sem' aplicado pelos chips de Curadoria Rápida #}
+    <input type="hidden" name="sem" value="{{ filtros.sem }}">
+    <div class="filters-row">
+        <div class="filters-field filters-field-wide">
+            <label for="q">Busca</label>
+            <input type="text" id="q" name="q" value="{{ filtros.q }}" placeholder="Ativo, site, endereco, cidade ou regional..." data-auto-submit-input>
+        </div>
+        <div class="filters-field">
+            <label for="cidade">Cidade</label>
+            <input type="text" id="cidade" name="cidade" value="{{ filtros.cidade }}" data-auto-submit-input>
+        </div>
+        <div class="filters-field filters-field-narrow">
+            <label for="uf">UF</label>
+            <input type="text" id="uf" name="uf" value="{{ filtros.uf }}" maxlength="2" data-auto-submit-input>
+        </div>
+        <div class="filters-field">
+            <label for="regional">Regional</label>
+            <input type="text" id="regional" name="regional" value="{{ filtros.regional }}" data-auto-submit-input>
+        </div>
+        <div class="filters-field">
+            <label for="ativo">Status</label>
+            <select id="ativo" name="ativo" data-auto-submit-input>
+                <option value="todos" {% if filtros.ativo == "todos" %}selected{% endif %}>Todos</option>
+                <option value="sim" {% if filtros.ativo == "sim" %}selected{% endif %}>Ativos</option>
+                <option value="nao" {% if filtros.ativo == "nao" %}selected{% endif %}>Inativos</option>
+            </select>
+        </div>
+        <div class="filters-actions">
+            <a href="{% url 'chamados:ativos_list' %}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </div>
+</form>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Ativo Prisma</th>
+                <th>Nome do site</th>
+                <th>Endereco</th>
+                <th>Cidade</th>
+                <th>UF</th>
+                <th>Regional</th>
+                <th>Tipo de imovel</th>
+                <th>Tipo site/SLA</th>
+                <th>Status</th>
+                <th>Acoes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ativo in ativos %}
+            <tr>
+                <td>{{ ativo.ativo_prisma }}</td>
+                <td>{% if ativo.nome_site %}{{ ativo.nome_site }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{% if ativo.endereco %}{{ ativo.endereco }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{% if ativo.cidade %}{{ ativo.cidade }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{% if ativo.uf %}{{ ativo.uf }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{% if ativo.regional %}{{ ativo.regional }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{% if ativo.tipo_imovel %}{{ ativo.tipo_imovel }}{% else %}<span class="empty-cell" title="Campo em branco">—</span>{% endif %}</td>
+                <td>{{ ativo.tipo_site_sla|default:"-" }}</td>
+                <td>
+                    {% if ativo.ativo %}
+                    <span class="status-pill status-on">Ativo</span>
+                    {% else %}
+                    <span class="status-pill status-off">Inativo</span>
+                    {% endif %}
+                </td>
+                <td class="actions-cell">
+                    <a href="{% url 'chamados:ativo_detail' ativo.pk %}" class="btn btn-link">Detalhe</a>
+                    <a href="{% url 'chamados:ativo_update' ativo.pk %}" class="btn btn-link">Editar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" class="empty">
+                    <div class="empty-state">Nenhum ativo encontrado. Importe o parque imobiliário ou cadastre um novo ativo.</div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Anterior</a>
+    {% endif %}
+    <span class="pagination-info">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Proxima</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<form method="post" class="form-card" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="form-grid">
+        <div class="form-field form-field-wide">
+            <label for="{{ form.nome.id_for_label }}">Nome *</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<small class="field-error">{{ form.nome.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.telefone.id_for_label }}">Telefone</label>
+            {{ form.telefone }}
+            {% if form.telefone.errors %}<small class="field-error">{{ form.telefone.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.email.id_for_label }}">E-mail</label>
+            {{ form.email }}
+            {% if form.email.errors %}<small class="field-error">{{ form.email.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.empresa.id_for_label }}">Empresa</label>
+            {{ form.empresa }}
+            {% if form.empresa.errors %}<small class="field-error">{{ form.empresa.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-wide">
+            <label for="{{ form.estados_atendidos.id_for_label }}">Estados atendidos</label>
+            {{ form.estados_atendidos }}
+            <small class="field-hint">Informe as UFs separadas por vírgula (ex.: SP, RJ, MG).</small>
+            {% if form.estados_atendidos.errors %}<small class="field-error">{{ form.estados_atendidos.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label for="{{ form.ativo.id_for_label }}">
+                {{ form.ativo }} Ativo
+            </label>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'chamados:fornecedores_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

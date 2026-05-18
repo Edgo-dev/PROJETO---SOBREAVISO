@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sobreaviso{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260517-13">
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <section class="auth-hero" aria-hidden="true">
+            <span class="auth-hero-orb auth-hero-orb-1"></span>
+            <span class="auth-hero-orb auth-hero-orb-2"></span>
+            <div class="auth-hero-content">
+                <span class="auth-hero-kicker">
+                    <span class="auth-hero-dot"></span> Operação emergencial
+                </span>
+                <h1 class="auth-hero-title">Sistema de Sobreaviso</h1>
+                <p class="auth-hero-sub">
+                    Gestão operacional de chamados emergenciais, ativos, fornecedores e
+                    acompanhamento de obras &mdash; sempre que o turno precisa registrar.
+                </p>
+                <ul class="auth-hero-features">
+                    <li>
+                        <span class="auth-hero-feature-icon" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Cadastro rápido com seu e-mail
+                    </li>
+                    <li>
+                        <span class="auth-hero-feature-icon" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Reports rápidos com prévia WhatsApp
+                    </li>
+                    <li>
+                        <span class="auth-hero-feature-icon" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        Recuperação de senha por e-mail
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="auth-card-wrap">
+            <article class="auth-card">
+                <header class="auth-card-head">
+                    <span class="auth-card-brand" aria-hidden="true">SA</span>
+                    <div>
+                        <p class="auth-card-eyebrow">{% block eyebrow %}Bem-vindo de volta{% endblock %}</p>
+                        <h2 class="auth-card-title">{% block card_title %}Entrar no Sobreaviso{% endblock %}</h2>
+                    </div>
+                </header>
+
+                {% block card_body %}{% endblock %}
+            </article>
+        </section>
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends "chamados/auth_base.html" %}
+
+{% block title %}Criar conta | Sobreaviso{% endblock %}
+{% block eyebrow %}Cadastro rápido{% endblock %}
+{% block card_title %}Criar conta no Sobreaviso{% endblock %}
+
+{% block card_body %}
+{% if form.non_field_errors %}
+<div class="auth-alert" role="alert">
+    <span class="auth-alert-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </span>
+    <div>
+        {% for error in form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<form method="post" class="auth-form" novalidate>
+    {% csrf_token %}
+
+    <div class="auth-field-grid">
+        <div class="auth-field">
+            <label for="{{ form.first_name.id_for_label }}">Nome</label>
+            <div class="auth-input-wrap">
+                <span class="auth-input-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                {{ form.first_name }}
+            </div>
+            {% if form.first_name.errors %}<small class="auth-field-error">{{ form.first_name.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="auth-field">
+            <label for="{{ form.last_name.id_for_label }}">Sobrenome</label>
+            <div class="auth-input-wrap">
+                <span class="auth-input-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                {{ form.last_name }}
+            </div>
+            {% if form.last_name.errors %}<small class="auth-field-error">{{ form.last_name.errors|join:" " }}</small>{% endif %}
+        </div>
+    </div>
+
+    <div class="auth-field">
+        <label for="{{ form.email.id_for_label }}">E-mail</label>
+        <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </span>
+            {{ form.email }}
+        </div>
+        {% if form.email.errors %}<small class="auth-field-error">{{ form.email.errors|join:" " }}</small>{% endif %}
+        <small class="auth-field-hint">Usado para recuperar sua senha caso precise.</small>
+    </div>
+
+    <div class="auth-field">
+        <label for="{{ form.password.id_for_label }}">Senha</label>
+        <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            {{ form.password }}
+            <button type="button" class="auth-input-toggle" data-toggle-password="{{ form.password.id_for_label }}" aria-label="Mostrar ou ocultar senha">
+                <svg class="auth-eye auth-eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="auth-eye auth-eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+        </div>
+        {% if form.password.errors %}<small class="auth-field-error">{{ form.password.errors|join:" " }}</small>{% endif %}
+        {% if form.password.help_text %}<small class="auth-field-hint">{{ form.password.help_text }}</small>{% endif %}
+    </div>
+
+    <div class="auth-field">
+        <label for="{{ form.password_confirmation.id_for_label }}">Confirmar senha</label>
+        <div class="auth-input-wrap">
+            <span class="auth-input-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            {{ form.password_confirmation }}
+            <button type="button" class="auth-input-toggle" data-toggle-password="{{ form.password_confirmation.id_for_label }}" aria-label="Mostrar ou ocultar senha">
+                <svg class="auth-eye auth-eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="auth-eye auth-eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+        </div>
+        {% if form.password_confirmation.errors %}<small class="auth-field-error">{{ form.password_confirmation.errors|join:" " }}</small>{% endif %}
+    </div>
+
+    <button type="submit" class="auth-submit">
+        <span>Criar conta</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+</form>
+
+<p class="auth-foot">
+    Já tem conta?
+    <a href="{% url 'chamados:login' %}" class="auth-link">Entrar</a>.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = document.getElementById(btn.dataset.togglePassword);
+            if (!target) return;
+            var isHidden = target.type === 'password';
+            target.type = isHidden ? 'text' : 'password';
+            btn.classList.toggle('is-revealed', isHidden);
+        });
+    });
+</script>
+{% endblock %}

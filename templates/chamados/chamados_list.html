@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Chamados{% endblock %}
+{% block page_title %}Chamados{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <div class="page-meta">
+        <span class="badge-total">{{ total }} chamado{{ total|pluralize }} encontrado{{ total|pluralize }}</span>
+    </div>
+    <a href="{% url 'chamados:chamado_create' %}" class="btn btn-primary">+ Novo chamado</a>
+</div>
+
+<form method="get" class="filters">
+    <div class="filters-row">
+        <div class="filters-field filters-field-wide">
+            <label for="q">Busca</label>
+            <input type="text" id="q" name="q" value="{{ filtros.q }}" placeholder="OS, ativo, cidade ou regional...">
+        </div>
+        <div class="filters-actions">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{% url 'chamados:chamados_list' %}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </div>
+</form>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Numero OS</th>
+                <th>Ativo</th>
+                <th>Cidade</th>
+                <th>Regional</th>
+                <th>Fornecedor</th>
+                <th>Data de abertura</th>
+                <th>Status</th>
+                <th>Acoes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chamado in chamados %}
+            <tr>
+                <td>{{ chamado.numero_os }}</td>
+                <td>{{ chamado.ativo.ativo_prisma }} - {{ chamado.ativo.nome_site }}</td>
+                <td>{{ chamado.ativo.cidade }}</td>
+                <td>{{ chamado.ativo.regional }}</td>
+                <td>{{ chamado.fornecedor.nome|default:"-" }}</td>
+                <td>{{ chamado.data_abertura|date:"d/m/Y H:i" }}</td>
+                <td><span class="status-pill status-{{ chamado.status }}">{{ chamado.get_status_display }}</span></td>
+                <td class="actions-cell">
+                    <a href="{% url 'chamados:chamado_detail' chamado.pk %}" class="btn btn-link">Ver detalhe</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="empty">Nenhum chamado encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Anterior</a>
+    {% endif %}
+    <span class="pagination-info">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% if querystring_filtros %}{{ querystring_filtros }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">Proxima</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

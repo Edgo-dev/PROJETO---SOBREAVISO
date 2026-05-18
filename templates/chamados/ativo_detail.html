@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ativo.ativo_prisma }} - {{ ativo.nome_site }}{% endblock %}
+{% block page_title %}Detalhe do ativo{% endblock %}
+
+{% block content %}
+<div class="detail-card">
+    <header class="detail-header">
+        <div>
+            <h2 class="detail-title">{{ ativo.nome_site }}</h2>
+            <p class="detail-subtitle">Ativo Prisma: <strong>{{ ativo.ativo_prisma }}</strong></p>
+        </div>
+        <div class="detail-status">
+            {% if ativo.ativo %}
+            <span class="status-pill status-on">Ativo</span>
+            {% else %}
+            <span class="status-pill status-off">Inativo</span>
+            {% endif %}
+        </div>
+    </header>
+
+    <dl class="detail-grid">
+        <div class="detail-item">
+            <dt>Endereco</dt>
+            <dd>{{ ativo.endereco }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Cidade</dt>
+            <dd>{{ ativo.cidade }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>UF</dt>
+            <dd>{{ ativo.uf }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Regional</dt>
+            <dd>{{ ativo.regional }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Tipo de imovel</dt>
+            <dd>{{ ativo.tipo_imovel|default:"-" }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Lider / Coordenacao</dt>
+            <dd>{{ ativo.lider_coordenacao|default:"-" }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Tipo site/SLA</dt>
+            <dd>{{ ativo.tipo_site_sla|default:"-" }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Criado em</dt>
+            <dd>{{ ativo.criado_em|date:"d/m/Y H:i" }}</dd>
+        </div>
+        <div class="detail-item">
+            <dt>Atualizado em</dt>
+            <dd>{{ ativo.atualizado_em|date:"d/m/Y H:i" }}</dd>
+        </div>
+    </dl>
+
+    <div class="detail-actions">
+        <a href="{% url 'chamados:chamado_create' %}?ativo={{ ativo.pk }}" class="btn btn-primary" data-feature="abrir-chamado">Abrir chamado para este ativo</a>
+        <a href="{% url 'chamados:ativo_update' ativo.pk %}" class="btn btn-secondary">Editar</a>
+        <a href="{% url 'chamados:ativos_list' %}" class="btn btn-link">Voltar para a Matriz</a>
+    </div>
+</div>
+{% endblock %}

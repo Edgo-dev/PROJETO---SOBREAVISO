@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+{% if ativo_preselecionado %}
+<div class="ativo-preselected-banner">
+    <strong>Ativo selecionado:</strong>
+    {{ ativo_preselecionado.ativo_prisma }} · {{ ativo_preselecionado.nome_site }}
+    <span class="ativo-preselected-meta">{{ ativo_preselecionado.cidade }}/{{ ativo_preselecionado.uf }} · {{ ativo_preselecionado.regional }}</span>
+</div>
+{% else %}
+<div class="report-notice">
+    Selecione um ativo ou abra o chamado a partir da Matriz de Ativos.
+</div>
+{% endif %}
+
+<form method="post" class="form-card chamado-form" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="chamado-main-grid">
+
+        <section class="chamado-col">
+            <h2 class="form-section-title">Identificação do ativo</h2>
+
+            <div class="form-field">
+                <label for="ativo-combobox-input">Ativo Prisma *</label>
+                <div
+                    class="combobox"
+                    data-combobox
+                    data-combobox-endpoint="{% url 'chamados:ativos_autocomplete' %}"
+                >
+                    <div class="combobox-input-wrap">
+                        <span class="combobox-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <input
+                            type="text"
+                            id="ativo-combobox-input"
+                            class="form-control combobox-input"
+                            data-combobox-input
+                            placeholder="Digite o Prisma, site, cidade ou UF..."
+                            autocomplete="off"
+                            spellcheck="false"
+                            role="combobox"
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-controls="ativo-combobox-list"
+                            value="{% if ativo_preselecionado %}{{ ativo_preselecionado.ativo_prisma }}{% endif %}"
+                        >
+                        <button type="button" class="combobox-clear" data-combobox-clear aria-label="Limpar seleção" hidden>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <ul
+                        id="ativo-combobox-list"
+                        class="combobox-list"
+                        role="listbox"
+                        data-combobox-list
+                        hidden
+                    ></ul>
+                    <input
+                        type="hidden"
+                        name="{{ form.ativo.name }}"
+                        id="id_ativo"
+                        value="{% if ativo_preselecionado %}{{ ativo_preselecionado.pk }}{% endif %}"
+                    >
+                </div>
+                <small class="field-hint">Digite para pesquisar. Ao selecionar o ativo, os campos do parque imobiliário são preenchidos automaticamente.</small>
+                {% if form.ativo.errors %}<small class="field-error">{{ form.ativo.errors|join:" " }}</small>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label for="display-nome-site">Nome do site <span class="field-auto">auto</span></label>
+                <input type="text" id="display-nome-site" class="form-control display-readonly" value="{{ ativo_preselecionado.nome_site|default:'' }}" placeholder="—" readonly>
+            </div>
+
+            <div class="form-field">
+                <label for="display-endereco">Endereço <span class="field-auto">auto</span></label>
+                <input type="text" id="display-endereco" class="form-control display-readonly" value="{{ ativo_preselecionado.endereco|default:'' }}" placeholder="—" readonly>
+            </div>
+
+            <div class="form-row form-row-3">
+                <div class="form-field">
+                    <label for="display-cidade">Cidade <span class="field-auto">auto</span></label>
+                    <input type="text" id="display-cidade" class="form-control display-readonly" value="{{ ativo_preselecionado.cidade|default:'' }}" placeholder="—" readonly>
+                </div>
+                <div class="form-field">
+                    <label for="display-uf">UF <span class="field-auto">auto</span></label>
+                    <input type="text" id="display-uf" class="form-control display-readonly" value="{{ ativo_preselecionado.uf|default:'' }}" placeholder="—" readonly>
+                </div>
+                <div class="form-field">
+                    <label for="display-regional">Regional <span class="field-auto">auto</span></label>
+                    <input type="text" id="display-regional" class="form-control display-readonly" value="{{ ativo_preselecionado.regional|default:'' }}" placeholder="—" readonly>
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="form-field">
+                    <label for="display-tipo-imovel">Imóvel <span class="field-auto">auto</span></label>
+                    <input type="text" id="display-tipo-imovel" class="form-control display-readonly" value="{{ ativo_preselecionado.tipo_imovel|default:'' }}" placeholder="—" readonly>
+                </div>
+                <div class="form-field">
+                    <label for="display-tipo-sla">Tipo site / SLA <span class="field-auto">auto</span></label>
+                    <input type="text" id="display-tipo-sla" class="form-control display-readonly" value="{{ ativo_preselecionado.tipo_site_sla|default:'' }}" placeholder="—" readonly>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="display-lider">Líder da coordenação <span class="field-auto">auto</span></label>
+                <input type="text" id="display-lider" class="form-control display-readonly" value="{{ ativo_preselecionado.lider_coordenacao|default:'' }}" placeholder="—" readonly>
+            </div>
+        </section>
+
+        <section class="chamado-col">
+            <h2 class="form-section-title">Dados do chamado</h2>
+
+            <div class="form-row form-row-2">
+                <div class="form-field">
+                    <label for="{{ form.numero_os.id_for_label }}">Número da OS *</label>
+                    {{ form.numero_os }}
+                    {% if form.numero_os.errors %}<small class="field-error">{{ form.numero_os.errors|join:" " }}</small>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.data_abertura.id_for_label }}">Data de abertura *</label>
+                    {{ form.data_abertura }}
+                    {% if form.data_abertura.errors %}<small class="field-error">{{ form.data_abertura.errors|join:" " }}</small>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="form-field">
+                    <label for="{{ form.status.id_for_label }}">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.fornecedor.id_for_label }}">Fornecedor</label>
+                    {{ form.fornecedor }}
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="form-field">
+                    <label for="{{ form.solicitante.id_for_label }}">Solicitante</label>
+                    {{ form.solicitante }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.contato_solicitante.id_for_label }}">Contato do solicitante</label>
+                    {{ form.contato_solicitante }}
+                </div>
+            </div>
+
+            <div class="form-row form-row-2">
+                <div class="form-field">
+                    <label for="{{ form.denominacao.id_for_label }}">Denominação</label>
+                    {{ form.denominacao }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.command_center.id_for_label }}">Command Center</label>
+                    {{ form.command_center }}
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.acao_tomada.id_for_label }}">Ação tomada</label>
+                {{ form.acao_tomada }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.dados_portaria_retirada_chave.id_for_label }}">Dados portaria / retirada de chave</label>
+                {{ form.dados_portaria_retirada_chave }}
+            </div>
+        </section>
+
+    </div>
+
+    <section class="form-section">
+        <h2 class="form-section-title">Detalhamento &amp; status do endereço</h2>
+        <div class="detalhamento-grid">
+            <div class="form-field detalhamento-field">
+                <label for="{{ form.detalhamento_situacao.id_for_label }}">Detalhamento da situação</label>
+                {{ form.detalhamento_situacao }}
+            </div>
+
+            <aside
+                id="obra-side-panel"
+                class="obra-side-panel {% if obras_ativas %}is-warning{% elif ativo_preselecionado %}is-clean{% else %}is-empty{% endif %}"
+                role="region"
+                aria-live="polite"
+                data-obras-endpoint="{% url 'chamados:ativo_obras_ativas' 0 %}"
+            >
+                <header class="obra-side-header">
+                    <span class="obra-side-icon" data-icon-empty>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span>
+                    <span class="obra-side-icon" data-icon-clean>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </span>
+                    <span class="obra-side-icon" data-icon-warning>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span>
+                    <div class="obra-side-headline">
+                        <h3 class="obra-side-title">Status do endereço</h3>
+                        <p class="obra-side-status" data-status-text>
+                            {% if obras_ativas %}Obra em andamento neste endereço
+                            {% elif ativo_preselecionado %}Endereço livre — sem obras em curso
+                            {% else %}Aguardando seleção do ativo{% endif %}
+                        </p>
+                    </div>
+                </header>
+
+                <div class="obra-side-body">
+                    <p class="obra-side-msg" data-msg-empty>
+                        Selecione um ativo para verificar se há obras em andamento neste endereço.
+                    </p>
+                    <p class="obra-side-msg" data-msg-clean>
+                        ✓ Nenhuma obra registrada para este endereço no período atual. Pode prosseguir com a abertura do chamado.
+                    </p>
+                    <div class="obra-side-warning" data-msg-warning>
+                        <p class="obra-side-warning-headline">
+                            ⚠ Antes de abrir a OS, confirme que o problema reportado <em>não está</em> dentro do escopo da obra abaixo.
+                        </p>
+                        <ul class="obra-side-list" id="obra-side-list">
+                            {% for obra in obras_ativas %}
+                            <li class="obra-side-item">
+                                <header class="obra-side-item-head">
+                                    <span class="status-pill situacao-{{ obra.situacao }}"><span class="status-dot"></span> {{ obra.situacao_label }}</span>
+                                    <a href="{% url 'chamados:obra_detail' obra.pk %}" class="btn btn-link" target="_blank" rel="noopener">Detalhe ↗</a>
+                                </header>
+                                <p class="obra-side-descricao">{{ obra.descricao|linebreaksbr }}</p>
+                                <dl class="obra-side-meta">
+                                    <div><dt>Início</dt><dd>{{ obra.data_inicio|date:"d/m/Y" }}</dd></div>
+                                    <div><dt>Fim planejado</dt><dd>{{ obra.data_fim_planejada|date:"d/m/Y" }}</dd></div>
+                                    <div><dt>Responsável</dt><dd>{{ obra.responsavel|default:"—" }}</dd></div>
+                                </dl>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar chamado</button>
+        <a href="{% url 'chamados:chamados_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

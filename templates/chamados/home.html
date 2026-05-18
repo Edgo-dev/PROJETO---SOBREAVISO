@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Sistema de Sobreaviso - Inicio{% endblock %}
+{% block page_title %}{% endblock %}
+
+{% block content %}
+<div class="home-page">
+    <div class="home-dashboard">
+    <div class="home-topbar">
+        <span class="home-notification" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        </span>
+        <div class="home-user-chip">
+            <span class="home-avatar" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a1f72" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span>Admin</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+    </div>
+
+    <section class="home-hero">
+        <div class="home-hero-content">
+            <span class="home-kicker"><span class="home-kicker-dot"></span> Operação emergencial</span>
+            <h2>Sistema de Sobreaviso</h2>
+            <p>Gestão operacional de chamados emergenciais, ativos, fornecedores e acompanhamento de obras.</p>
+        </div>
+
+        <div class="home-cityscape" aria-hidden="true">
+            <span class="building building-one"></span>
+            <span class="building building-two"></span>
+            <span class="building building-three"></span>
+            <span class="building building-four"></span>
+            <span class="city-line"></span>
+        </div>
+
+        <div class="home-hero-metrics">
+            <div class="hero-metric">
+                <header class="hero-metric-head">
+                    <span class="hero-metric-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 13v.01"/><path d="M9 17v.01"/></svg>
+                    </span>
+                    <span class="hero-metric-label">Ativos</span>
+                </header>
+                <div class="hero-metric-split">
+                    <div class="hero-metric-cell">
+                        <small>Prédios</small>
+                        <strong>{{ metricas.predios_total }}</strong>
+                    </div>
+                    <div class="hero-metric-cell">
+                        <small>Lojas</small>
+                        <strong>{{ metricas.lojas_total }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-metric">
+                <header class="hero-metric-head">
+                    <span class="hero-metric-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <span class="hero-metric-label">Pendentes</span>
+                </header>
+                <div class="hero-metric-split">
+                    <div class="hero-metric-cell">
+                        <small>Prédios</small>
+                        <strong class="metric-warn">{{ metricas.predios_pendentes }}</strong>
+                    </div>
+                    <div class="hero-metric-cell">
+                        <small>Lojas</small>
+                        <strong class="metric-warn">{{ metricas.lojas_pendentes }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-metric">
+                <header class="hero-metric-head">
+                    <span class="hero-metric-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    <span class="hero-metric-label">Concluídos</span>
+                </header>
+                <div class="hero-metric-split">
+                    <div class="hero-metric-cell">
+                        <small>Prédios</small>
+                        <strong class="metric-ok">{{ metricas.predios_concluidos }}</strong>
+                    </div>
+                    <div class="hero-metric-cell">
+                        <small>Lojas</small>
+                        <strong class="metric-ok">{{ metricas.lojas_concluidos }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section">
+        <h2 class="home-section-title">Ações principais</h2>
+        <div class="quick-actions">
+            <a href="{% url 'chamados:ativos_import' %}" class="home-action action-import">
+                <span class="action-icon" aria-hidden="true">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </span>
+                <span>
+                    <strong>Importar Parque</strong>
+                    <small>Importe ou atualize a base de ativos.</small>
+                </span>
+                <span class="action-arrow" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+            </a>
+            <a href="{% url 'chamados:chamado_create' %}" class="home-action home-action-primary">
+                <span class="action-icon" aria-hidden="true">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </span>
+                <span>
+                    <strong>Novo Chamado</strong>
+                    <small>Registre uma nova OS emergencial.</small>
+                </span>
+                <span class="action-arrow" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+            </a>
+            <a href="{% url 'chamados:atualizar_report_list' %}" class="home-action action-report">
+                <span class="action-icon" aria-hidden="true">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                </span>
+                <span>
+                    <strong>Atualizar Report</strong>
+                    <small>Atualize o status e acompanhe os chamados.</small>
+                </span>
+                <span class="action-arrow" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+            </a>
+        </div>
+    </section>
+
+    <section class="home-section">
+        <h2 class="home-section-title">Visão operacional</h2>
+        <div class="module-grid">
+            <a href="{% url 'chamados:ativos_list' %}" class="module-card module-card-assets">
+                <div>
+                    <span class="module-icon" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    </span>
+                    <h3 class="module-card-title">Matriz de Ativos</h3>
+                    <p class="module-card-description">Gerencie os ativos e endereços e acompanhe a base imobiliária.</p>
+                </div>
+                <span class="module-card-link">Acessar →</span>
+            </a>
+            <a href="{% url 'chamados:fornecedores_list' %}" class="module-card module-card-supplier">
+                <div>
+                    <span class="module-icon" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
+                    <h3 class="module-card-title">Contato Fornecedor</h3>
+                    <p class="module-card-description">Gerencie contatos e empresas de apoio e fornecimento.</p>
+                </div>
+                <span class="module-card-link">Acessar →</span>
+            </a>
+            <a href="{% url 'chamados:consolidado_obras' %}" class="module-card module-card-works">
+                <div>
+                    <span class="module-icon" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </span>
+                    <h3 class="module-card-title">Consolidado Obras</h3>
+                    <p class="module-card-description">Acompanhe o panorama operacional por status, regional e fornecedor.</p>
+                </div>
+                <span class="module-card-link">Acessar →</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="home-status-row" aria-label="Resumo operacional">
+        <div class="home-status-item">
+            <span class="status-orb status-purple" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <div>
+                <strong>Operação 24/7</strong>
+                <p>Sistema disponível continuamente.</p>
+            </div>
+        </div>
+        <div class="home-status-item">
+            <span class="status-orb status-green" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <div>
+                <strong>Dados seguros</strong>
+                <p>Informações protegidas e criptografadas.</p>
+            </div>
+        </div>
+        <div class="home-status-item">
+            <span class="status-orb status-blue" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </span>
+            <div>
+                <strong>Atualizações em tempo real</strong>
+                <p>Acompanhe instantaneamente os chamados.</p>
+            </div>
+        </div>
+    </section>
+    </div>
+</div>
+{% endblock %}

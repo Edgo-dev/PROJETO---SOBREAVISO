@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<form method="post" class="form-card" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="form-grid">
+        <div class="form-field">
+            <label for="{{ form.ativo_prisma.id_for_label }}">Ativo Prisma *</label>
+            {{ form.ativo_prisma }}
+            {% if form.ativo_prisma.errors %}<small class="field-error">{{ form.ativo_prisma.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-wide">
+            <label for="{{ form.nome_site.id_for_label }}">Nome do site *</label>
+            {{ form.nome_site }}
+            {% if form.nome_site.errors %}<small class="field-error">{{ form.nome_site.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-wide">
+            <label for="{{ form.endereco.id_for_label }}">Endereco *</label>
+            {{ form.endereco }}
+            {% if form.endereco.errors %}<small class="field-error">{{ form.endereco.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.cidade.id_for_label }}">Cidade *</label>
+            {{ form.cidade }}
+            {% if form.cidade.errors %}<small class="field-error">{{ form.cidade.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field form-field-narrow">
+            <label for="{{ form.uf.id_for_label }}">UF *</label>
+            {{ form.uf }}
+            {% if form.uf.errors %}<small class="field-error">{{ form.uf.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.regional.id_for_label }}">Regional *</label>
+            {{ form.regional }}
+            {% if form.regional.errors %}<small class="field-error">{{ form.regional.errors|join:" " }}</small>{% endif %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.tipo_imovel.id_for_label }}">Tipo de imovel</label>
+            {{ form.tipo_imovel }}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.lider_coordenacao.id_for_label }}">Lider / Coordenacao</label>
+            {{ form.lider_coordenacao }}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ form.tipo_site_sla.id_for_label }}">Tipo site/SLA</label>
+            {{ form.tipo_site_sla }}
+        </div>
+
+        <div class="form-field form-field-checkbox">
+            <label for="{{ form.ativo.id_for_label }}">
+                {{ form.ativo }} Ativo
+            </label>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'chamados:ativos_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}
