@@ -3950,3 +3950,229 @@ class HomeMetricasCoerentesTests(_LoginClienteMixin, TestCase):
             msg=f"Faltam chaves nas métricas da Home: "
                 f"{chaves_obrigatorias - metricas.keys()}",
         )
+
+
+# =============================================================================
+# Caminho feliz HTTP das importações (POST com .xlsx válido)
+# =============================================================================
+# As fases anteriores cobriram:
+# - lógica dos importadores isoladamente (ImportadorAtivosFlexivelTests,
+#   ImportadorFornecedoresFlexivelTests, ImportadorObrasFlexivelTests);
+# - importação parcial preservando dados existentes
+#   (ImportacaoParcialAtivosTests, ImportacaoParcialFornecedoresTests);
+# - arquivos .xlsx inválidos sem 500
+#   (ImportacaoAtivosArquivoInvalidoTests, ...).
+#
+# Esta classe completa a matriz: caminho HTTP feliz das três telas de
+# upload, com usuário autenticado e arquivo válido criado em memória.
+
+
+class ImportacaoValidaHttpTests(TestCase):
+    """Caminho feliz HTTP das três rotas de importação.
+
+    Rotas exercitadas:
+    - ``chamados:ativos_import``       → ``/ativos/importar/``
+    - ``chamados:fornecedores_import`` → ``/fornecedores/importar/``
+    - ``chamados:obras_import``        → ``/obras/importar/``
+
+    Em todas as três, a view renderiza a própria tela de importação após
+    sucesso (não há redirect 302) — então o caminho feliz responde 200 com
+    ``messages.success("Importação concluída.")`` no contexto.
+    """
+
+    NOME_CAMPO_UPLOAD = "arquivo"
+    MENSAGEM_SUCESSO = "Importação concluída."
+    CONTENT_TYPE_XLSX = (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    def _login(self):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        usuario = User.objects.create_user(
+            username="operador_upload", password="senhaforte123"
+        )
+        self.client.force_login(usuario)
+        return usuario
+
+    def _planilha_bytes(self, linhas):
+        """Gera bytes de um .xlsx válido a partir de uma lista de linhas."""
+        wb = Workbook()
+        ws = wb.active
+        for linha in linhas:
+            ws.append(list(linha))
+        buf = BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    def _upload(self, linhas, nome="planilha.xlsx"):
+        return SimpleUploadedFile(
+            nome,
+            self._planilha_bytes(linhas),
+            content_type=self.CONTENT_TYPE_XLSX,
+        )
+
+    def _post(self, rota, upload):
+        return self.client.post(
+            reverse(rota),
+            data={self.NOME_CAMPO_UPLOAD: upload},
+        )
+
+    def _mensagens(self, response):
+        return [str(m) for m in response.context["messages"]]
+
+    # --------------------------- Teste 1: Ativos -----------------------------
+
+    def test_post_valido_de_ativos_cria_registro_e_responde_200(self):
+        self._login()
+        upload = self._upload(
+            [
+                [
+                    "Ativo Prisma",
+                    "Nome do Site",
+                    "Endereço",
+                    "Cidade",
+                    "UF",
+                    "Regional",
+                    "Tipo de imóvel",
+                ],
+                [
+                    "HTTP-ATIVO-1",
+                    "Site HTTP Ativo",
+                    "Av. Upload, 100",
+                    "São Paulo",
+                    "SP",
+                    "Sudeste",
+                    "LOJA",
+                ],
+            ]
+        )
+
+        response = self._post("chamados:ativos_import", upload)
+
+        self.assertEqual(response.status_code, 200)
+        # Tela é renderizada (não há redirect após sucesso).
+        self.assertTemplateUsed(response, "chamados/ativos_import.html")
+        # Mensagem de sucesso emitida pela view.
+        self.assertIn(self.MENSAGEM_SUCESSO, self._mensagens(response))
+        # Registro foi efetivamente persistido com os campos da planilha.
+        ativo = Ativo.objects.get(ativo_prisma="HTTP-ATIVO-1")
+        self.assertEqual(ativo.nome_site, "Site HTTP Ativo")
+        self.assertEqual(ativo.cidade, "São Paulo")
+        self.assertEqual(ativo.uf, "SP")
+        self.assertEqual(ativo.regional, "Sudeste")
+        self.assertEqual(ativo.tipo_imovel, "LOJA")
+        # O resultado da importação também aparece no contexto.
+        self.assertIsNotNone(response.context.get("resultado"))
+        self.assertEqual(response.context["resultado"].criados, 1)
+
+    # --------------------------- Teste 2: Fornecedores -----------------------
+
+    def test_post_valido_de_fornecedores_cria_registro_e_responde_200(self):
+        self._login()
+        # Contagem relativa: a migration de seed (0004_seed_fornecedores_padrao)
+        # popula a tabela. O teste não pode assumir count() == 0/1.
+        antes = Fornecedor.objects.count()
+
+        upload = self._upload(
+            [
+                ["Nome", "Telefone", "E-mail", "Empresa", "Estados atendidos"],
+                [
+                    "Fornecedor HTTP",
+                    "11944443333",
+                    "http@empresa.com",
+                    "Empresa HTTP",
+                    "SP, RJ",
+                ],
+            ]
+        )
+
+        response = self._post("chamados:fornecedores_import", upload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "chamados/fornecedores_import.html")
+        self.assertIn(self.MENSAGEM_SUCESSO, self._mensagens(response))
+        # Contagem RELATIVA + filtro específico.
+        self.assertEqual(Fornecedor.objects.count(), antes + 1)
+        forn = Fornecedor.objects.get(nome="Fornecedor HTTP")
+        self.assertEqual(forn.telefone, "11944443333")
+        self.assertEqual(forn.email, "http@empresa.com")
+        self.assertEqual(forn.empresa, "Empresa HTTP")
+        # _normalizar_estados aplica .upper() e ", " como separador.
+        self.assertEqual(forn.estados_atendidos, "SP, RJ")
+        self.assertEqual(response.context["resultado"].criados, 1)
+
+    # --------------------------- Teste 3: Obras ------------------------------
+
+    def test_post_valido_de_obras_cria_registro_e_responde_200(self):
+        self._login()
+        # Obra exige Ativo pré-existente (chave por ativo_prisma).
+        ativo = Ativo.objects.create(
+            ativo_prisma="HTTP-OBRA-PR",
+            nome_site="Site Obra HTTP",
+            endereco="Rua Obra, 1",
+            cidade="Curitiba",
+            uf="PR",
+            regional="Sul",
+        )
+
+        # Datas fixas e coerentes (não dependem da data atual).
+        upload = self._upload(
+            [
+                [
+                    "Ativo Prisma",
+                    "Descrição da obra",
+                    "Data início",
+                    "Data fim planejada",
+                    "Responsável",
+                    "Observações",
+                ],
+                [
+                    ativo.ativo_prisma,
+                    "Reforma de fachada",
+                    "01/06/2026",
+                    "30/07/2026",
+                    "Construtora HTTP",
+                    "Obra de teste HTTP",
+                ],
+            ]
+        )
+
+        response = self._post("chamados:obras_import", upload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "chamados/obras_import.html")
+        self.assertIn(self.MENSAGEM_SUCESSO, self._mensagens(response))
+        # Obra criada e associada ao ativo correto.
+        obra = Obra.objects.get(ativo=ativo, descricao="Reforma de fachada")
+        self.assertEqual(obra.data_inicio.isoformat(), "2026-06-01")
+        self.assertEqual(obra.data_fim_planejada.isoformat(), "2026-07-30")
+        self.assertEqual(obra.responsavel, "Construtora HTTP")
+        self.assertEqual(obra.observacoes, "Obra de teste HTTP")
+        self.assertTrue(obra.ativa)
+        self.assertEqual(response.context["resultado"].criados, 1)
+
+    # --------------------------- Teste 4: anônimo redireciona ----------------
+
+    def test_post_anonimo_em_ativos_import_redireciona_e_nao_cria_registro(self):
+        # Garante usuário anônimo — sem force_login.
+        self.client.logout()
+        antes_ativos = Ativo.objects.count()
+
+        upload = self._upload(
+            [
+                ["Ativo Prisma", "Nome do Site", "Cidade", "UF", "Regional"],
+                ["HTTP-ANON-1", "Site Anônimo", "Salvador", "BA", "Nordeste"],
+            ]
+        )
+
+        response = self._post("chamados:ativos_import", upload)
+
+        # Middleware redireciona para /login/ — nenhum efeito colateral.
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response["Location"])
+        self.assertEqual(Ativo.objects.count(), antes_ativos)
+        self.assertFalse(
+            Ativo.objects.filter(ativo_prisma="HTTP-ANON-1").exists()
+        )
