@@ -1,0 +1,37 @@
+# Normaliza line endings na master para LF. Reduz ruído CRLF/LF no Windows
+# (autocrlf=true converte para CRLF no working tree do dev, mas commita LF).
+# Para criar este arquivo NÃO precisamos refazer commits — afeta apenas
+# operações futuras (checkout, diff, archive).
+
+# Fontes Python e templates
+*.py    text eol=lf
+*.html  text eol=lf
+
+# Assets
+*.css   text eol=lf
+*.js    text eol=lf
+
+# Texto / config
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.toml  text eol=lf
+*.cfg   text eol=lf
+*.ini   text eol=lf
+
+# Garante shebang scripts com LF
+*.sh    text eol=lf
+
+# Binários — não tocar
+*.xlsx  binary
+*.xls   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.sqlite3 binary
