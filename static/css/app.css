@@ -1246,6 +1246,18 @@ a {
     color: #bdbdbd;
 }
 
+/*
+ * Badge específico para a coluna "Primeiro report" da tela Atualizar Report.
+ * Usa a mesma paleta coral/vermelha do card "Primeiro report pendente"
+ * (.report-metric-card.tone-alerta), para que a cor da listagem case com
+ * a cor do contador do topo. NÃO substitui `.status-pendente`, que continua
+ * representando o status do chamado (âmbar) na coluna "Status atual".
+ */
+.status-primeiro-report-pendente {
+    background-color: rgba(249, 115, 115, 0.18);
+    color: #ffb3b3;
+}
+
 /* === Paginacao === */
 .pagination {
     display: flex;

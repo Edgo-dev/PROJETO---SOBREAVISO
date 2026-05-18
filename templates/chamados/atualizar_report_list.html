@@ -177,7 +177,7 @@
                 <td><span class="status-pill status-{{ chamado.status }}">{{ chamado.get_status_display }}</span></td>
                 <td>
                     {% if chamado.primeiro_report %}
-                    <span class="status-pill status-pendente">Pendente</span>
+                    <span class="status-pill status-primeiro-report-pendente">Pendente</span>
                     {% else %}
                     <span class="status-pill status-concluido">Feito</span>
                     {% endif %}
