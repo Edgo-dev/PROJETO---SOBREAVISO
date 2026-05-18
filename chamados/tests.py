@@ -3697,3 +3697,256 @@ class AutenticacaoTelasInternasContratoTests(TestCase):
                     200,
                     msg=f"Esperado 200 em {nome_rota} para usuário autenticado.",
                 )
+
+
+# =============================================================================
+# Métricas da Home: coerência formal
+# =============================================================================
+# Documenta e trava o comportamento das métricas exibidas no hero da Home
+# (Prédios x Lojas / Pendentes / Concluídos). A função de produção é
+# ``chamados.views._metricas_home``.
+#
+# Regras testadas aqui (resumo):
+#
+# 1. Lojas       = ``Ativo.tipo_imovel`` contém "loja" (case-insensitive).
+# 2. Prédios     = negação de Lojas (inclui ``tipo_imovel`` vazio).
+# 3. Ativo.ativo = False também é contado nas métricas (inventário total).
+# 4. Pendentes   = ``ABERTO`` ∪ ``PENDENTE``.
+# 5. Concluídos  = somente ``CONCLUIDO``.
+# 6. ``CANCELADO`` e ``NAO_EMERGENCIAL`` NÃO entram em pendentes nem em
+#    concluídos.
+# 7. Fornecedores e Obras NÃO compõem métrica no hero hoje.
+#
+# Qualquer mudança nessas regras deve quebrar testes desta classe — e isso
+# é proposital: a métrica é um contrato com a operação e precisa ser
+# alterada explicitamente.
+
+
+class HomeMetricasCoerentesTests(_LoginClienteMixin, TestCase):
+    """Garante coerência formal das métricas da Home."""
+
+    def _criar_ativo(self, prisma, tipo_imovel="", ativo=True, **kwargs):
+        dados = {
+            "ativo_prisma": prisma,
+            "nome_site": kwargs.pop("nome_site", f"Site {prisma}"),
+            "endereco": kwargs.pop("endereco", "Rua T, 1"),
+            "cidade": kwargs.pop("cidade", "São Paulo"),
+            "uf": kwargs.pop("uf", "SP"),
+            "regional": kwargs.pop("regional", "Sudeste"),
+            "tipo_imovel": tipo_imovel,
+            "ativo": ativo,
+        }
+        dados.update(kwargs)
+        return Ativo.objects.create(**dados)
+
+    def _criar_chamado(self, ativo, status, numero_os):
+        return Chamado.objects.create(
+            ativo=ativo,
+            numero_os=numero_os,
+            data_abertura=timezone.now(),
+            status=status,
+        )
+
+    def _metricas(self):
+        from .views import _metricas_home
+
+        return _metricas_home()
+
+    # ---------------- Prédios e Lojas: classificação por tipo_imovel ---------
+
+    def test_ativo_com_loja_no_tipo_entra_em_lojas(self):
+        antes = self._metricas()
+        self._criar_ativo("M-LOJA-1", tipo_imovel="LOJA")
+        depois = self._metricas()
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"] + 1)
+        self.assertEqual(depois["predios_total"], antes["predios_total"])
+
+    def test_ativo_com_loja_shopping_no_tipo_entra_em_lojas(self):
+        """Sinônimo realista: 'LOJA SHOPPING IGUATEMI' contém 'loja'."""
+        antes = self._metricas()
+        self._criar_ativo("M-LOJA-2", tipo_imovel="LOJA SHOPPING IGUATEMI")
+        depois = self._metricas()
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"] + 1)
+        self.assertEqual(depois["predios_total"], antes["predios_total"])
+
+    def test_ativo_com_predio_no_tipo_entra_em_predios(self):
+        antes = self._metricas()
+        self._criar_ativo("M-PRED-1", tipo_imovel="PREDIO")
+        depois = self._metricas()
+        self.assertEqual(depois["predios_total"], antes["predios_total"] + 1)
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"])
+
+    def test_ativo_com_tipos_diversos_nao_loja_entram_em_predios(self):
+        """'TÉCNICO', 'SEDE', 'CD' — qualquer coisa fora de loja vira prédio."""
+        antes = self._metricas()
+        self._criar_ativo("M-TEC-1", tipo_imovel="TÉCNICO")
+        self._criar_ativo("M-SEDE-1", tipo_imovel="SEDE ADMINISTRATIVA")
+        self._criar_ativo("M-CD-1", tipo_imovel="CD")
+        depois = self._metricas()
+        self.assertEqual(depois["predios_total"], antes["predios_total"] + 3)
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"])
+
+    # ---------------- Tipo vazio ---------------------------------------------
+
+    def test_ativo_com_tipo_imovel_vazio_entra_em_predios(self):
+        """REGRA ATUAL EXPLÍCITA: tipo_imovel='' cai em Prédios (negação de
+        'loja' inclui vazio). Não há bucket 'sem classificação' hoje."""
+        antes = self._metricas()
+        self._criar_ativo("M-VAZIO-1", tipo_imovel="")
+        depois = self._metricas()
+        self.assertEqual(depois["predios_total"], antes["predios_total"] + 1)
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"])
+
+    # ---------------- Ativo inativo ------------------------------------------
+
+    def test_ativo_inativo_loja_continua_contando_em_lojas(self):
+        """REGRA ATUAL EXPLÍCITA: ``Ativo.ativo=False`` também é contado.
+        Métrica é inventário do parque, não 'parque operacional'."""
+        antes = self._metricas()
+        self._criar_ativo("M-INA-L", tipo_imovel="LOJA", ativo=False)
+        depois = self._metricas()
+        self.assertEqual(depois["lojas_total"], antes["lojas_total"] + 1)
+
+    def test_ativo_inativo_predio_continua_contando_em_predios(self):
+        antes = self._metricas()
+        self._criar_ativo("M-INA-P", tipo_imovel="PREDIO", ativo=False)
+        depois = self._metricas()
+        self.assertEqual(depois["predios_total"], antes["predios_total"] + 1)
+
+    # ---------------- Chamados: pendentes vs concluídos ----------------------
+
+    def test_chamado_aberto_conta_em_pendentes(self):
+        ativo = self._criar_ativo("M-CH-AB", tipo_imovel="LOJA")
+        antes = self._metricas()
+        self._criar_chamado(ativo, StatusChamado.ABERTO, "OS-AB-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"] + 1
+        )
+        self.assertEqual(
+            depois["lojas_concluidos"], antes["lojas_concluidos"]
+        )
+
+    def test_chamado_pendente_conta_em_pendentes(self):
+        ativo = self._criar_ativo("M-CH-PE", tipo_imovel="LOJA")
+        antes = self._metricas()
+        self._criar_chamado(ativo, StatusChamado.PENDENTE, "OS-PE-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"] + 1
+        )
+
+    def test_chamado_concluido_conta_em_concluidos(self):
+        ativo = self._criar_ativo("M-CH-CO", tipo_imovel="LOJA")
+        antes = self._metricas()
+        self._criar_chamado(ativo, StatusChamado.CONCLUIDO, "OS-CO-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["lojas_concluidos"], antes["lojas_concluidos"] + 1
+        )
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"]
+        )
+
+    def test_chamado_cancelado_nao_entra_em_pendentes_nem_concluidos(self):
+        ativo = self._criar_ativo("M-CH-CA", tipo_imovel="LOJA")
+        antes = self._metricas()
+        self._criar_chamado(ativo, StatusChamado.CANCELADO, "OS-CA-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"]
+        )
+        self.assertEqual(
+            depois["lojas_concluidos"], antes["lojas_concluidos"]
+        )
+
+    def test_chamado_nao_emergencial_nao_entra_em_pendentes_nem_concluidos(self):
+        ativo = self._criar_ativo("M-CH-NE", tipo_imovel="LOJA")
+        antes = self._metricas()
+        self._criar_chamado(ativo, StatusChamado.NAO_EMERGENCIAL, "OS-NE-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"]
+        )
+        self.assertEqual(
+            depois["lojas_concluidos"], antes["lojas_concluidos"]
+        )
+
+    def test_chamados_em_predio_caem_em_predios(self):
+        """A separação prédio x loja na métrica de chamados é pelo
+        ``ativo.tipo_imovel`` do chamado."""
+        predio = self._criar_ativo("M-CH-PR", tipo_imovel="PREDIO")
+        antes = self._metricas()
+        self._criar_chamado(predio, StatusChamado.ABERTO, "OS-PRAB-1")
+        self._criar_chamado(predio, StatusChamado.CONCLUIDO, "OS-PRCO-1")
+        depois = self._metricas()
+        self.assertEqual(
+            depois["predios_pendentes"], antes["predios_pendentes"] + 1
+        )
+        self.assertEqual(
+            depois["predios_concluidos"], antes["predios_concluidos"] + 1
+        )
+        self.assertEqual(
+            depois["lojas_pendentes"], antes["lojas_pendentes"]
+        )
+        self.assertEqual(
+            depois["lojas_concluidos"], antes["lojas_concluidos"]
+        )
+
+    # ---------------- Fornecedores e Obras: não exibidos no hero -------------
+
+    def test_metricas_home_nao_expoe_contagem_de_fornecedores(self):
+        """Hoje a Home não exibe contagem de Fornecedores. Se essa decisão
+        mudar, esta asserção deve ser atualizada explicitamente."""
+        Fornecedor.objects.create(nome="Forn Teste Métrica", ativo=True)
+        Fornecedor.objects.create(nome="Forn Teste Inativo", ativo=False)
+        metricas = self._metricas()
+        self.assertNotIn("fornecedores_total", metricas)
+        self.assertNotIn("fornecedores_ativos", metricas)
+
+    def test_metricas_home_nao_expoe_contagem_de_obras(self):
+        """Hoje a Home não exibe contagem de Obras. Se essa decisão mudar,
+        esta asserção deve ser atualizada explicitamente."""
+        ativo = self._criar_ativo("M-OB-1", tipo_imovel="LOJA")
+        Obra.objects.create(
+            ativo=ativo,
+            descricao="Pintura",
+            data_inicio=timezone.now().date(),
+            data_fim_planejada=timezone.now().date(),
+            ativa=True,
+        )
+        metricas = self._metricas()
+        self.assertNotIn("obras_total", metricas)
+        self.assertNotIn("obras_ativas", metricas)
+
+    # ---------------- Contrato HTTP da Home ----------------------------------
+
+    def test_home_anonimo_recebe_302(self):
+        self.client.logout()
+        response = self.client.get(reverse("chamados:home"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response["Location"])
+
+    def test_home_autenticado_recebe_200(self):
+        response = self.client.get(reverse("chamados:home"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_home_contexto_contem_chaves_de_metricas_esperadas(self):
+        response = self.client.get(reverse("chamados:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("metricas", response.context)
+        metricas = response.context["metricas"]
+        chaves_obrigatorias = {
+            "predios_total",
+            "lojas_total",
+            "predios_pendentes",
+            "lojas_pendentes",
+            "predios_concluidos",
+            "lojas_concluidos",
+        }
+        self.assertEqual(
+            chaves_obrigatorias & metricas.keys(),
+            chaves_obrigatorias,
+            msg=f"Faltam chaves nas métricas da Home: "
+                f"{chaves_obrigatorias - metricas.keys()}",
+        )

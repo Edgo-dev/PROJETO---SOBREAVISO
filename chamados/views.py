@@ -177,7 +177,24 @@ def _q_predios(prefixo: str = "") -> Q:
 
 
 def _metricas_home() -> dict:
-    """Calcula os totais Prédios x Lojas exibidos nos cards do hero."""
+    """Calcula os totais Prédios x Lojas exibidos nos cards do hero da Home.
+
+    Regras formais (cobertas por ``HomeMetricasCoerentesTests``):
+
+    - **Lojas**: ``Ativo.tipo_imovel`` contém ``"loja"`` (case-insensitive,
+      acentos não importam pois o filtro é ``__icontains`` literal).
+    - **Prédios**: NEGAÇÃO de Lojas — qualquer ``tipo_imovel`` que NÃO contenha
+      ``"loja"``. Isso inclui ``tipo_imovel`` vazio (``""``), valores como
+      ``"PRÉDIO"``, ``"TÉCNICO"``, ``"SEDE"`` etc.
+    - **Status do Ativo**: a contagem NÃO filtra por ``ativo=True``;
+      ``Ativo.ativo=False`` também é contabilizado. Trata-se de inventário
+      total do parque, não de "ativos operacionais".
+    - **Pendentes**: chamados com status ``ABERTO`` OU ``PENDENTE``
+      (união). ``CANCELADO`` e ``NAO_EMERGENCIAL`` NÃO entram.
+    - **Concluídos**: chamados com status estritamente ``CONCLUIDO``.
+      ``CANCELADO`` e ``NAO_EMERGENCIAL`` NÃO entram.
+    - **Fornecedores** e **Obras** NÃO compõem métrica no hero hoje.
+    """
     total_predios = Ativo.objects.filter(_q_predios()).count()
     total_lojas = Ativo.objects.filter(_q_lojas()).count()
 
