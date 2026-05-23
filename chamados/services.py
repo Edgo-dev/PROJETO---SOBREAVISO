@@ -14,6 +14,7 @@ from django.utils import timezone
 from .models import (
     AtualizacaoChamado,
     Chamado,
+    Evidencia,
     StatusChamado,
     TipoEventoAtualizacao,
 )
@@ -60,6 +61,7 @@ def registrar_report(
     texto_atualizacao: str,
     status_resultante: str | None = None,
     usuario=None,
+    evidencias: list | None = None,
 ) -> AtualizacaoChamado:
     """Cria uma AtualizacaoChamado e sincroniza o status do Chamado.
 
@@ -105,6 +107,36 @@ def registrar_report(
             status_resultante=status_resultante,
             criado_por=usuario_autenticado,
         )
+        if evidencias:
+            EXTENSOES_PERMITIDAS = {
+                "jpg", "jpeg", "png", "webp", "gif", "heic",
+                "mp4", "mov", "avi", "mkv", "webm", "pdf",
+            }
+            TAMANHO_MAXIMO = 20 * 1024 * 1024  # 20 MB
+            MAX_ARQUIVOS = 10
+
+            if len(evidencias) > MAX_ARQUIVOS:
+                raise ValueError(
+                    f"Máximo de {MAX_ARQUIVOS} arquivos por atualização."
+                )
+
+            for ordem, arquivo in enumerate(evidencias):
+                if not arquivo:
+                    continue
+                if arquivo.size > TAMANHO_MAXIMO:
+                    raise ValueError(
+                        f"Arquivo '{arquivo.name}' excede o limite de 20 MB."
+                    )
+                ext = arquivo.name.rsplit(".", 1)[-1].lower() if "." in arquivo.name else ""
+                if ext not in EXTENSOES_PERMITIDAS:
+                    raise ValueError(
+                        f"Tipo de arquivo não permitido: '{arquivo.name}'. "
+                        f"Permitidos: imagens, vídeos e PDF."
+                    )
+                ev = Evidencia(atualizacao=atualizacao, ordem=ordem)
+                ev.arquivo = arquivo
+                ev.detectar_tipo()
+                ev.save()
         chamado.status = status_resultante
         if usuario_autenticado is not None:
             chamado.atualizado_por = usuario_autenticado
@@ -184,7 +216,7 @@ def gerar_linhas_historico(chamado: Chamado) -> list[str]:
     atualizacao — ele ja aparece no cabecalho da mensagem (EMERGENCIAL
     PENDENTE / CONCLUIDA / ...), entao colocar de novo so polui o texto.
     """
-    atualizacoes = list(chamado.atualizacoes.order_by("criado_em"))
+    atualizacoes = list(chamado.atualizacoes.order_by("criado_em").prefetch_related("evidencias"))
     if not atualizacoes:
         return ["- Sem atualizações registradas."]
 
@@ -231,19 +263,18 @@ def gerar_texto_whatsapp(
         "",
         f"Número da OS: {formatar_valor_report(chamado.numero_os)}",
         f"Status do atendimento: {formatar_valor_report(status_display)}",
+        f"Categoria: {formatar_valor_report(chamado.denominacao)}",
         f"Data de abertura: {formatar_data_report(chamado.data_abertura)}",
         f"Ativo Prisma: {formatar_valor_report(ativo.ativo_prisma)}",
         f"Nome do Site: {formatar_valor_report(ativo.nome_site)}",
         f"Tipo de Prédio: {formatar_valor_report(ativo.tipo_imovel)}",
         f"Endereço: {formatar_valor_report(ativo.endereco)}",
-        f"Cidade: {formatar_valor_report(ativo.cidade)}",
-        f"UF: {formatar_valor_report(ativo.uf)}",
+        f"Cidade/UF: {formatar_valor_report(ativo.cidade)}/{formatar_valor_report(ativo.uf)}",
         f"Regional: {formatar_valor_report(ativo.regional)}",
         f"Líder Regional: {formatar_valor_report(ativo.lider_coordenacao)}",
         f"Tipo de imóvel / SLA: {formatar_valor_report(ativo.tipo_site_sla)}",
         f"Fornecedor: {formatar_valor_report(fornecedor_nome)}",
         f"Command Center: {formatar_valor_report(chamado.command_center)}",
-        f"Denominação: {formatar_valor_report(chamado.denominacao)}",
         f"Ação tomada: {formatar_valor_report(chamado.acao_tomada)}",
         f"Solicitante: {formatar_valor_report(chamado.solicitante)}",
         f"Contato: {formatar_valor_report(chamado.contato_solicitante)}",
@@ -266,3 +297,57 @@ def gerar_texto_whatsapp(
         )
 
     return "\n".join(linhas)
+
+
+# ─── Criação de chamado ───────────────────────────────────
+def criar_chamado(form, usuario=None) -> "Chamado":
+    """Persiste um novo Chamado a partir de um ChamadoForm válido."""
+    chamado = form.save(commit=False)
+    usuario_autenticado = (
+        usuario
+        if usuario is not None and getattr(usuario, "is_authenticated", False)
+        else None
+    )
+    if usuario_autenticado:
+        chamado.criado_por = usuario_autenticado
+        chamado.atualizado_por = usuario_autenticado
+    chamado.save()
+    return chamado
+
+
+# ─── Conclusão de obra ────────────────────────────────────
+def concluir_obra(obra) -> bool:
+    """
+    Marca a obra como concluída com a data de hoje.
+    Retorna True se concluiu, False se já estava concluída.
+    """
+    from datetime import date
+    if obra.data_fim_real:
+        return False
+    obra.data_fim_real = date.today()
+    obra.save(update_fields=["data_fim_real", "atualizado_em"])
+    return True
+
+
+# ─── Registro de usuário ──────────────────────────────────
+def registrar_usuario(first_name: str, last_name: str,
+                       email: str, password: str):
+    """
+    Cria um novo User com username derivado do email.
+    Retorna o User criado.
+    """
+    from django.contrib.auth import get_user_model
+    UserModel = get_user_model()
+    base_username = email.split("@")[0][:140] or "usuario"
+    username = base_username
+    sufixo = 1
+    while UserModel.objects.filter(username=username).exists():
+        sufixo += 1
+        username = f"{base_username}{sufixo}"
+    return UserModel.objects.create_user(
+        username=username,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        password=password,
+    )

@@ -5,8 +5,12 @@ Status e historico de Report sao representados por TextChoices e por
 AtualizacaoChamado, respectivamente, sem tabelas auxiliares.
 """
 
+from datetime import date
+
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.utils.text import get_valid_filename
 
 
 class StatusChamado(models.TextChoices):
@@ -80,6 +84,8 @@ class Ativo(models.Model):
             models.Index(fields=["cidade"]),
             models.Index(fields=["regional"]),
             models.Index(fields=["nome_site"]),
+            models.Index(fields=["ativo"]),
+            models.Index(fields=["uf"]),
         ]
 
     def __str__(self):
@@ -140,6 +146,10 @@ class Chamado(models.Model):
             models.Index(fields=["numero_os"]),
             models.Index(fields=["data_abertura"]),
             models.Index(fields=["status"]),
+            models.Index(
+                fields=["data_abertura", "criado_em"],
+                name="chamado_data_criado_idx",
+            ),
         ]
 
     def __str__(self):
@@ -152,7 +162,7 @@ class AtualizacaoChamado(models.Model):
 
     chamado = models.ForeignKey(
         Chamado,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="atualizacoes",
     )
     tipo_evento = models.CharField(
@@ -229,7 +239,6 @@ class Obra(models.Model):
 
     @property
     def esta_em_andamento(self) -> bool:
-        from datetime import date
         hoje = date.today()
         if not self.ativa or self.data_fim_real is not None:
             return False
@@ -237,14 +246,12 @@ class Obra(models.Model):
 
     @property
     def esta_atrasada(self) -> bool:
-        from datetime import date
         if not self.ativa or self.data_fim_real is not None:
             return False
         return date.today() > self.data_fim_planejada
 
     @property
     def situacao(self) -> str:
-        from datetime import date
         if self.data_fim_real is not None:
             return "concluida"
         if not self.ativa:
@@ -266,3 +273,110 @@ class Obra(models.Model):
             "em_andamento": "Em andamento",
         }
         return labels.get(self.situacao, self.situacao)
+
+
+class TipoEvidencia(models.TextChoices):
+    IMAGEM = "imagem", "Imagem"
+    VIDEO = "video", "Vídeo"
+    PDF = "pdf", "PDF"
+    OUTRO = "outro", "Outro"
+
+
+def evidencia_upload_to(instance, filename):
+    os_numero = ""
+    try:
+        os_numero = instance.atualizacao.chamado.numero_os
+    except Exception:
+        os_numero = "sem-os"
+    os_pasta = get_valid_filename(os_numero)[:50]
+    safe_filename = get_valid_filename(filename)
+    from django.utils import timezone
+    now = timezone.now()
+    return f"evidencias/{now.year}/{now.month:02d}/{os_pasta}/{safe_filename}"
+
+
+class Evidencia(models.Model):
+    Tipo = TipoEvidencia
+    TipoArquivo = TipoEvidencia
+
+    atualizacao = models.ForeignKey(
+        AtualizacaoChamado,
+        on_delete=models.PROTECT,
+        related_name="evidencias",
+    )
+    arquivo = models.FileField(
+        "Arquivo",
+        upload_to=evidencia_upload_to,
+        validators=[FileExtensionValidator(
+            allowed_extensions=["jpg", "jpeg", "png", "webp",
+                                "gif", "heic", "mp4", "mov",
+                                "avi", "mkv", "webm", "pdf"]
+        )],
+    )
+    tipo = models.CharField(
+        max_length=10,
+        choices=TipoEvidencia.choices,
+        default=TipoEvidencia.IMAGEM,
+    )
+    legenda = models.CharField(max_length=200, blank=True)
+    ordem = models.PositiveSmallIntegerField(default=0)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["ordem", "criado_em"]
+        verbose_name = "Evidência"
+        verbose_name_plural = "Evidências"
+        indexes = [
+            models.Index(fields=["atualizacao"]),
+            models.Index(fields=["tipo"]),
+        ]
+
+    def __str__(self):
+        return self.nome_arquivo or f"Evidência {self.pk}"
+
+    @property
+    def nome_arquivo(self) -> str:
+        import os
+
+        if not self.arquivo:
+            return ""
+        return os.path.basename(self.arquivo.name)
+
+    @property
+    def is_imagem(self) -> bool:
+        return self.tipo == TipoEvidencia.IMAGEM
+
+    @property
+    def is_video(self) -> bool:
+        return self.tipo == TipoEvidencia.VIDEO
+
+    def detectar_tipo(self) -> str:
+        import os
+
+        if not self.arquivo:
+            return TipoEvidencia.OUTRO
+        nome = getattr(self.arquivo, "name", "") or str(self.arquivo)
+        _, ext = os.path.splitext(nome.lower())
+        if ext in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}:
+            return TipoEvidencia.IMAGEM
+        if ext in {".mp4", ".mov", ".avi", ".mkv", ".webm"}:
+            return TipoEvidencia.VIDEO
+        if ext == ".pdf":
+            return TipoEvidencia.PDF
+        return TipoEvidencia.OUTRO
+
+
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+
+@receiver(post_delete, sender=Evidencia)
+def deletar_arquivo_evidencia(sender, instance, **kwargs):
+    """Remove o arquivo físico ao deletar uma Evidencia."""
+    if instance.arquivo:
+        import os
+        try:
+            if os.path.isfile(instance.arquivo.path):
+                os.remove(instance.arquivo.path)
+        except Exception:
+            pass

@@ -43,6 +43,11 @@ urlpatterns = [
         ),
         name="password_reset_complete",
     ),
+    path(
+        "media/evidencias/<path:caminho>",
+        views.serve_evidencia,
+        name="serve_evidencia",
+    ),
     path("", views.home, name="home"),
     path("ativos/", views.ativos_list, name="ativos_list"),
     path("ativos/novo/", views.ativo_create, name="ativo_create"),
@@ -69,6 +74,7 @@ urlpatterns = [
     ),
     path("obras/<int:pk>/", views.obra_detail, name="obra_detail"),
     path("obras/<int:pk>/editar/", views.obra_update, name="obra_update"),
+    path("obras/<int:pk>/concluir/", views.obra_concluir, name="obra_concluir"),
     path("fornecedores/", views.fornecedores_list, name="fornecedores_list"),
     path("fornecedores/novo/", views.fornecedor_create, name="fornecedor_create"),
     path(
@@ -86,6 +92,11 @@ urlpatterns = [
         "fornecedores/<int:pk>/editar/",
         views.fornecedor_update,
         name="fornecedor_update",
+    ),
+    path(
+        "fornecedores/<int:pk>/excluir/",
+        views.fornecedor_delete,
+        name="fornecedor_delete",
     ),
     path("consolidado-obras/", views.consolidado_obras, name="consolidado_obras"),
     path("chamados/", views.chamados_list, name="chamados_list"),

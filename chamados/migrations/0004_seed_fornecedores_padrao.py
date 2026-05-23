@@ -14,9 +14,11 @@ FORNECEDORES_PADRAO = [
 
 
 def criar_fornecedores_padrao(apps, schema_editor):
+    from django.db import transaction
     Fornecedor = apps.get_model("chamados", "Fornecedor")
-    for nome in FORNECEDORES_PADRAO:
-        Fornecedor.objects.get_or_create(nome=nome, defaults={"ativo": True})
+    with transaction.atomic():
+        for nome in FORNECEDORES_PADRAO:
+            Fornecedor.objects.get_or_create(nome=nome, defaults={"ativo": True})
 
 
 def remover_fornecedores_padrao(apps, schema_editor):

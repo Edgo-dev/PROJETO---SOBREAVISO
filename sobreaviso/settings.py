@@ -7,24 +7,45 @@ Bootstrap inicial. As regras de negocio de chamados emergenciais serao adicionad
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-bootstrap-key-change-me-in-production",
-)
+# SECRET_KEY — obrigatória em produção
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    _default_key = "django-insecure-dev-only-change-me"
+    import warnings
+    warnings.warn(
+        "DJANGO_SECRET_KEY não definida. "
+        "Usando chave insegura — NUNCA use em produção.",
+        stacklevel=2,
+    )
+    SECRET_KEY = _default_key
 
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes")
+# DEBUG — padrão False; ativar explicitamente em DEV
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
+
+# ── Hardening de produção ─────────────────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT            = True
+    SECURE_HSTS_SECONDS            = 31536000   # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD            = True
+    SESSION_COOKIE_SECURE          = True
+    CSRF_COOKIE_SECURE             = True
+    SECURE_CONTENT_TYPE_NOSNIFF    = True
+    SECURE_REFERRER_POLICY         = "strict-origin-when-cross-origin"
+    X_FRAME_OPTIONS                = "DENY"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -129,5 +150,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

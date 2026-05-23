@@ -1,15 +1,17 @@
 """Views do app chamados."""
 
 import logging
+import mimetypes
 from datetime import date
 from io import BytesIO
 from zipfile import BadZipFile
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import Case, Count, IntegerField, Q, Value, When
-from django.http import HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -19,7 +21,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils.exceptions import InvalidFileException
 
-from django.contrib.auth import get_user_model
 from . import services
 from .forms import (
     AtivoForm,
@@ -57,6 +58,36 @@ EXCECOES_PLANILHA_INVALIDA = (BadZipFile, InvalidFileException, ValueError)
 MENSAGEM_PLANILHA_INVALIDA = (
     "Arquivo Excel inválido ou corrompido. Envie uma planilha .xlsx válida."
 )
+
+
+def _montar_querystring(request, excluir=("page",)):
+    """Retorna querystring sem os parâmetros listados em excluir."""
+    params = request.GET.copy()
+    for chave in excluir:
+        params.pop(chave, None)
+    return params.urlencode()
+
+
+def serve_evidencia(request, caminho):
+    """Serve arquivos de evidência apenas para usuários autenticados."""
+    if not request.user.is_authenticated:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
+    import os as _os
+    from django.conf import settings as _settings
+    base = _os.path.realpath(
+        _os.path.join(_settings.MEDIA_ROOT, "evidencias")
+    )
+    real = _os.path.realpath(
+        _os.path.join(_settings.MEDIA_ROOT, "evidencias", caminho)
+    )
+    if not real.startswith(base + _os.sep) and real != base:
+        raise Http404
+    if not _os.path.isfile(real):
+        raise Http404
+    content_type, _ = mimetypes.guess_type(real)
+    content_type = content_type or "application/octet-stream"
+    return FileResponse(open(real, "rb"), content_type=content_type)
 
 
 def _obras_ativas_qs(ativo):
@@ -115,6 +146,7 @@ def _normalizar_filtros_atualizar_report(params):
         "regional": params.get("regional", "").strip(),
         "fornecedor": params.get("fornecedor", "").strip(),
         "cidade": params.get("cidade", "").strip(),
+        "primeiro_report": params.get("primeiro_report", "").strip(),
     }
 
 
@@ -154,6 +186,9 @@ def _filtrar_chamados_atualizar_report(params):
             queryset = queryset.filter(fornecedor_id=int(filtros["fornecedor"]))
         except (TypeError, ValueError):
             pass
+
+    if filtros["primeiro_report"] == "sim":
+        queryset = queryset.filter(atualizacoes__isnull=True)
 
     return queryset, filtros
 
@@ -195,26 +230,32 @@ def _metricas_home() -> dict:
       ``CANCELADO`` e ``NAO_EMERGENCIAL`` NÃO entram.
     - **Fornecedores** e **Obras** NÃO compõem métrica no hero hoje.
     """
-    total_predios = Ativo.objects.filter(_q_predios()).count()
-    total_lojas = Ativo.objects.filter(_q_lojas()).count()
+    metricas_ativos = Ativo.objects.aggregate(
+        predios=Count("id", filter=_q_predios()),
+        lojas=Count("id", filter=_q_lojas()),
+    )
 
     pendentes_qs = Chamado.objects.filter(
         Q(status=StatusChamado.ABERTO) | Q(status=StatusChamado.PENDENTE)
     )
-    pendentes_predios = pendentes_qs.filter(_q_predios("ativo__")).count()
-    pendentes_lojas = pendentes_qs.filter(_q_lojas("ativo__")).count()
+    metricas_chamados = pendentes_qs.aggregate(
+        predios_pendentes=Count("id", filter=_q_predios("ativo__")),
+        lojas_pendentes=Count("id", filter=_q_lojas("ativo__")),
+    )
 
     concluidos_qs = Chamado.objects.filter(status=StatusChamado.CONCLUIDO)
-    concluidos_predios = concluidos_qs.filter(_q_predios("ativo__")).count()
-    concluidos_lojas = concluidos_qs.filter(_q_lojas("ativo__")).count()
+    metricas_concluidos = concluidos_qs.aggregate(
+        predios_concluidos=Count("id", filter=_q_predios("ativo__")),
+        lojas_concluidos=Count("id", filter=_q_lojas("ativo__")),
+    )
 
     return {
-        "predios_total": total_predios,
-        "lojas_total": total_lojas,
-        "predios_pendentes": pendentes_predios,
-        "lojas_pendentes": pendentes_lojas,
-        "predios_concluidos": concluidos_predios,
-        "lojas_concluidos": concluidos_lojas,
+        "predios_total":      metricas_ativos["predios"],
+        "lojas_total":        metricas_ativos["lojas"],
+        "predios_pendentes":  metricas_chamados["predios_pendentes"],
+        "lojas_pendentes":    metricas_chamados["lojas_pendentes"],
+        "predios_concluidos": metricas_concluidos["predios_concluidos"],
+        "lojas_concluidos":   metricas_concluidos["lojas_concluidos"],
     }
 
 
@@ -318,9 +359,7 @@ def ativos_list(request):
     paginator = Paginator(queryset, ATIVOS_POR_PAGINA)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    querystring_sem_pagina = request.GET.copy()
-    querystring_sem_pagina.pop("page", None)
-    querystring_filtros = querystring_sem_pagina.urlencode()
+    querystring_filtros = _montar_querystring(request)
 
     context = {
         "page_obj": page_obj,
@@ -454,9 +493,7 @@ def fornecedores_list(request):
     paginator = Paginator(queryset, FORNECEDORES_POR_PAGINA)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    querystring_sem_pagina = request.GET.copy()
-    querystring_sem_pagina.pop("page", None)
-    querystring_filtros = querystring_sem_pagina.urlencode()
+    querystring_filtros = _montar_querystring(request)
 
     return render(
         request,
@@ -597,6 +634,28 @@ def fornecedor_detail(request, pk):
     )
 
 
+def fornecedor_delete(request, pk):
+    fornecedor = get_object_or_404(Fornecedor, pk=pk)
+    if request.method == "POST":
+        nome = fornecedor.nome
+        if fornecedor.chamados.exists():
+            messages.error(
+                request,
+                f"Não é possível excluir '{nome}' pois possui chamados vinculados. "
+                "Considere inativá-lo em vez de excluir."
+            )
+            return redirect("chamados:fornecedores_list")
+        fornecedor.delete()
+        messages.success(request, f"Supervisor '{nome}' excluído com sucesso.")
+        return redirect("chamados:fornecedores_list")
+    return render(
+        request,
+        "chamados/fornecedor_confirm_delete.html",
+        {"fornecedor": fornecedor},
+    )
+
+
+@require_http_methods(["GET", "POST"])
 def chamado_create(request):
     """Cadastro de novo chamado emergencial.
 
@@ -615,11 +674,7 @@ def chamado_create(request):
     if request.method == "POST":
         form = ChamadoForm(request.POST)
         if form.is_valid():
-            chamado = form.save(commit=False)
-            if request.user.is_authenticated:
-                chamado.criado_por = request.user
-                chamado.atualizado_por = request.user
-            chamado.save()
+            chamado = services.criar_chamado(form, usuario=request.user)
             messages.success(request, "Chamado criado com sucesso.")
             return redirect("chamados:chamado_detail", pk=chamado.pk)
     else:
@@ -667,9 +722,7 @@ def chamados_list(request):
     paginator = Paginator(queryset, CHAMADOS_POR_PAGINA)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    querystring_sem_pagina = request.GET.copy()
-    querystring_sem_pagina.pop("page", None)
-    querystring_filtros = querystring_sem_pagina.urlencode()
+    querystring_filtros = _montar_querystring(request)
 
     return render(
         request,
@@ -687,20 +740,34 @@ def chamados_list(request):
 def chamado_detail(request, pk):
     """Detalhe completo de um chamado."""
     chamado = get_object_or_404(
-        Chamado.objects.select_related("ativo", "fornecedor", "criado_por", "atualizado_por"),
+        Chamado.objects.select_related(
+            "ativo", "fornecedor", "criado_por", "atualizado_por"
+        ).prefetch_related(
+            "atualizacoes__evidencias",
+            "atualizacoes__criado_por",
+        ),
         pk=pk,
     )
-    atualizacoes = chamado.atualizacoes.select_related("criado_por").order_by(
-        "criado_em"
-    )
-    texto_whatsapp = services.gerar_texto_whatsapp(chamado)
+    atualizacoes = chamado.atualizacoes.all()
     return render(
         request,
         "chamados/chamado_detail.html",
         {
             "chamado": chamado,
             "atualizacoes": atualizacoes,
-            "texto_whatsapp": texto_whatsapp,
+            "tempo_aberto": _formatar_tempo_aberto(chamado.data_abertura),
+            "sla_class": (
+                _classificar_sla(chamado.data_abertura)
+                if chamado.status in (
+                    StatusChamado.ABERTO.value,
+                    StatusChamado.PENDENTE.value,
+                )
+                else None
+            ),
+            "mostrar_sla": chamado.status in (
+                StatusChamado.ABERTO.value,
+                StatusChamado.PENDENTE.value,
+            ),
         },
     )
 
@@ -734,6 +801,7 @@ def atualizar_report_list(request):
         concluidos=Count("id", filter=Q(status=StatusChamado.CONCLUIDO)),
         cancelados=Count("id", filter=Q(status=StatusChamado.CANCELADO)),
         nao_emergenciais=Count("id", filter=Q(status=StatusChamado.NAO_EMERGENCIAL)),
+        primeiro_report_pendente=Count("id", filter=Q(atualizacoes__isnull=True)),
     )
     contadores = {
         "total": total,
@@ -742,7 +810,7 @@ def atualizar_report_list(request):
         "concluidos": contadores_status["concluidos"],
         "cancelados": contadores_status["cancelados"],
         "nao_emergenciais": contadores_status["nao_emergenciais"],
-        "primeiro_report_pendente": queryset.filter(atualizacoes__isnull=True).count(),
+        "primeiro_report_pendente": contadores_status["primeiro_report_pendente"],
     }
 
     paginator = Paginator(queryset, ATUALIZAR_REPORT_POR_PAGINA)
@@ -750,28 +818,57 @@ def atualizar_report_list(request):
 
     chamados = list(page_obj.object_list)
     for chamado in chamados:
-        chamado.primeiro_report = services.is_primeiro_report(chamado)
+        # Usa o cache do prefetch_related em vez de disparar exists() por chamado
+        chamado.primeiro_report = len(chamado.atualizacoes.all()) == 0
+        if chamado.status in (
+            StatusChamado.ABERTO.value,
+            StatusChamado.PENDENTE.value,
+        ):
+            chamado.sla_class = _classificar_sla(chamado.data_abertura)
+            chamado.tempo_aberto_label = _formatar_tempo_aberto(chamado.data_abertura)
+        else:
+            chamado.sla_class = None
+            chamado.tempo_aberto_label = None
 
-    querystring_sem_pagina = request.GET.copy()
-    querystring_sem_pagina.pop("page", None)
-    querystring_filtros = querystring_sem_pagina.urlencode()
+    querystring_filtros = _montar_querystring(request)
+
+    base_qs = _montar_querystring(request, excluir=("page",))
+    sep = "&" if base_qs else ""
+    querystring_com_primeiro_report = (
+        base_qs + (f"{sep}primeiro_report=sim"
+                   if "primeiro_report" not in request.GET else "")
+    )
+    querystring_sem_primeiro_report = _montar_querystring(
+        request, excluir=("page", "primeiro_report")
+    )
 
     # Dropdowns refletem apenas regionais/cidades que existem na esteira
     # de chamados (nao o parque imobiliario inteiro).
-    regionais_disponiveis = list(
-        Chamado.objects.exclude(ativo__regional="")
-        .exclude(ativo__regional__isnull=True)
-        .values_list("ativo__regional", flat=True)
-        .distinct()
-        .order_by("ativo__regional")
-    )
-    cidades_disponiveis = list(
-        Chamado.objects.exclude(ativo__cidade="")
-        .exclude(ativo__cidade__isnull=True)
-        .values_list("ativo__cidade", flat=True)
-        .distinct()
-        .order_by("ativo__cidade")
-    )
+    _cache_key_regionais = "dropdown_regionais_chamados"
+    _cache_key_cidades   = "dropdown_cidades_chamados"
+    TTL = 120  # segundos
+
+    regionais_disponiveis = cache.get(_cache_key_regionais)
+    if regionais_disponiveis is None:
+        regionais_disponiveis = list(
+            Chamado.objects.exclude(ativo__regional="")
+            .exclude(ativo__regional__isnull=True)
+            .values_list("ativo__regional", flat=True)
+            .distinct()
+            .order_by("ativo__regional")
+        )
+        cache.set(_cache_key_regionais, regionais_disponiveis, TTL)
+
+    cidades_disponiveis = cache.get(_cache_key_cidades)
+    if cidades_disponiveis is None:
+        cidades_disponiveis = list(
+            Chamado.objects.exclude(ativo__cidade="")
+            .exclude(ativo__cidade__isnull=True)
+            .values_list("ativo__cidade", flat=True)
+            .distinct()
+            .order_by("ativo__cidade")
+        )
+        cache.set(_cache_key_cidades, cidades_disponiveis, TTL)
 
     return render(
         request,
@@ -787,6 +884,8 @@ def atualizar_report_list(request):
             "cidades_disponiveis": cidades_disponiveis,
             "filtros": filtros,
             "querystring_filtros": querystring_filtros,
+            "querystring_com_primeiro_report": querystring_com_primeiro_report,
+            "querystring_sem_primeiro_report": querystring_sem_primeiro_report,
         },
     )
 
@@ -794,6 +893,9 @@ def atualizar_report_list(request):
 def atualizar_report_exportar_excel(request):
     """Exporta a listagem de Atualizar Report respeitando os filtros da tela."""
     queryset, _filtros = _filtrar_chamados_atualizar_report(request.GET)
+    queryset = queryset.select_related(
+        "ativo", "fornecedor"
+    ).prefetch_related("atualizacoes")
 
     workbook = Workbook()
     sheet = workbook.active
@@ -889,6 +991,19 @@ def _formatar_tempo_aberto(data_abertura) -> str:
     return f"{dias}d"
 
 
+def _classificar_sla(data_abertura) -> str:
+    """Retorna 'ok', 'alerta' ou 'critico' baseado no tempo aberto."""
+    if data_abertura is None:
+        return "ok"
+    delta = timezone.now() - data_abertura
+    horas = delta.total_seconds() / 3600
+    if horas <= 4:
+        return "ok"
+    if horas <= 12:
+        return "alerta"
+    return "critico"
+
+
 def atualizar_report_form(request, pk):
     """Formulario de report com persistencia delegada ao service."""
     chamado = get_object_or_404(
@@ -909,12 +1024,14 @@ def atualizar_report_form(request, pk):
                     "Status resultante é obrigatório para atualizações posteriores.",
                 )
             else:
+                evidencias = request.FILES.getlist("evidencias")
                 try:
                     services.registrar_report(
                         chamado=chamado,
                         texto_atualizacao=form.cleaned_data["texto_atualizacao"],
                         status_resultante=status_resultante,
                         usuario=request.user,
+                        evidencias=evidencias,
                     )
                 except ValueError as exc:
                     form.add_error(None, str(exc))
@@ -981,30 +1098,35 @@ def obras_list(request):
         queryset = queryset.filter(data_fim_real__isnull=False)
 
     total = queryset.count()
-    em_andamento_count = Obra.objects.filter(
-        ativa=True,
-        data_fim_real__isnull=True,
-        data_inicio__lte=hoje,
-        data_fim_planejada__gte=hoje,
-    ).count()
-    atrasadas_count = Obra.objects.filter(
-        ativa=True,
-        data_fim_real__isnull=True,
-        data_fim_planejada__lt=hoje,
-    ).count()
-    planejadas_count = Obra.objects.filter(
-        ativa=True,
-        data_fim_real__isnull=True,
-        data_inicio__gt=hoje,
-    ).count()
-    concluidas_count = Obra.objects.filter(data_fim_real__isnull=False).count()
+    hoje_obras = date.today()
+    stats_obras = Obra.objects.aggregate(
+        em_andamento=Count("id", filter=Q(
+            ativa=True,
+            data_fim_real__isnull=True,
+            data_inicio__lte=hoje_obras,
+            data_fim_planejada__gte=hoje_obras,
+        )),
+        atrasadas=Count("id", filter=Q(
+            ativa=True,
+            data_fim_real__isnull=True,
+            data_fim_planejada__lt=hoje_obras,
+        )),
+        planejadas=Count("id", filter=Q(
+            ativa=True,
+            data_fim_real__isnull=True,
+            data_inicio__gt=hoje_obras,
+        )),
+        concluidas=Count("id", filter=Q(data_fim_real__isnull=False)),
+    )
+    em_andamento_count = stats_obras["em_andamento"]
+    atrasadas_count    = stats_obras["atrasadas"]
+    planejadas_count   = stats_obras["planejadas"]
+    concluidas_count   = stats_obras["concluidas"]
 
     paginator = Paginator(queryset, OBRAS_POR_PAGINA)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    querystring_sem_pagina = request.GET.copy()
-    querystring_sem_pagina.pop("page", None)
-    querystring_filtros = querystring_sem_pagina.urlencode()
+    querystring_filtros = _montar_querystring(request)
 
     return render(
         request,
@@ -1025,6 +1147,7 @@ def obras_list(request):
     )
 
 
+@require_http_methods(["GET", "POST"])
 def obra_create(request):
     """Cadastro individual de obra."""
     ativo_param = request.GET.get("ativo")
@@ -1049,10 +1172,11 @@ def obra_create(request):
     return render(
         request,
         "chamados/obra_form.html",
-        {"form": form, "titulo": "Nova obra", "modo": "novo"},
+        {"form": form, "modo": "novo"},
     )
 
 
+@require_http_methods(["GET", "POST"])
 def obra_update(request, pk):
     """Edição de obra existente."""
     obra = get_object_or_404(Obra, pk=pk)
@@ -1069,7 +1193,6 @@ def obra_update(request, pk):
         "chamados/obra_form.html",
         {
             "form": form,
-            "titulo": f"Editar obra · {obra.ativo.nome_site}",
             "modo": "editar",
             "obra": obra,
         },
@@ -1079,7 +1202,55 @@ def obra_update(request, pk):
 def obra_detail(request, pk):
     """Detalhe da obra."""
     obra = get_object_or_404(Obra.objects.select_related("ativo"), pk=pk)
-    return render(request, "chamados/obra_detail.html", {"obra": obra})
+
+    hoje = date.today()
+    total_dias = (obra.data_fim_planejada - obra.data_inicio).days or 1
+    dias_passados = (min(hoje, obra.data_fim_planejada) - obra.data_inicio).days
+    progresso = max(0, min(100, int(dias_passados / total_dias * 100)))
+
+    if obra.data_fim_real:
+        dias_restantes = None
+        dias_atraso = None
+    elif hoje > obra.data_fim_planejada:
+        dias_restantes = None
+        dias_atraso = (hoje - obra.data_fim_planejada).days
+    else:
+        dias_restantes = (obra.data_fim_planejada - hoje).days
+        dias_atraso = None
+
+    alerta_proximidade = dias_restantes is not None and dias_restantes <= 7
+
+    return render(
+        request,
+        "chamados/obra_detail.html",
+        {
+            "obra": obra,
+            "progresso": progresso,
+            "dias_restantes": dias_restantes,
+            "dias_atraso": dias_atraso,
+            "alerta_proximidade": alerta_proximidade,
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def obra_concluir(request, pk):
+    obra = get_object_or_404(Obra, pk=pk)
+    if request.method == "POST":
+        concluida = services.concluir_obra(obra)
+        if concluida:
+            messages.success(
+                request,
+                f"Obra em '{obra.ativo.nome_site}' marcada como concluída.",
+            )
+        else:
+            messages.warning(request, "Esta obra já foi concluída.")
+        return redirect("chamados:obra_detail", pk=obra.pk)
+    return render(
+        request,
+        "chamados/obra_concluir_confirm.html",
+        {"obra": obra},
+    )
 
 
 def obras_import(request):
@@ -1143,6 +1314,7 @@ def obras_template_download(request):
     return response
 
 
+@require_http_methods(["GET"])
 def ativos_autocomplete(request):
     """Endpoint JSON usado pelo combobox de Ativo Prisma no Novo Chamado.
 
@@ -1198,6 +1370,7 @@ def ativos_autocomplete(request):
     })
 
 
+@require_http_methods(["GET"])
 def ativo_obras_ativas(request, pk):
     """Endpoint JSON consumido pelo formulário de Novo Chamado.
 
@@ -1301,22 +1474,10 @@ def register_view(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
-            UserModel = get_user_model()
-            email = form.cleaned_data["email"]
-            # Gera um username unico baseado no email (parte antes do @);
-            # se ja existir, anexa sufixo numerico.
-            base_username = email.split("@")[0][:140] or "usuario"
-            username = base_username
-            sufixo = 1
-            while UserModel.objects.filter(username=username).exists():
-                sufixo += 1
-                username = f"{base_username}{sufixo}"
-
-            user = UserModel.objects.create_user(
-                username=username,
-                email=email,
+            user = services.registrar_usuario(
                 first_name=form.cleaned_data["first_name"],
                 last_name=form.cleaned_data["last_name"],
+                email=form.cleaned_data["email"],
                 password=form.cleaned_data["password"],
             )
             # Como ha mais de um backend configurado, especificamos qual

@@ -1,10 +1,13 @@
 """Middleware do app chamados."""
 
+import logging as _logging
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+
+_logger = _logging.getLogger(__name__)
 
 
 class LoginRequiredMiddleware:
@@ -37,7 +40,12 @@ class LoginRequiredMiddleware:
 
         try:
             login_url = reverse(settings.LOGIN_URL)
-        except Exception:
+        except Exception as exc:
+            _logger.debug(
+                "LoginRequiredMiddleware: erro ao resolver URL %s — %s",
+                request.path,
+                exc,
+            )
             login_url = settings.LOGIN_URL
         query = urlencode({"next": request.get_full_path()})
         return HttpResponseRedirect(f"{login_url}?{query}")
