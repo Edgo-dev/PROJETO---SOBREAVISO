@@ -1,88 +1,186 @@
 {% extends "base.html" %}
 
-{% block title %}Chamado {{ chamado.numero_os }}{% endblock %}
-{% block page_title %}Chamado {{ chamado.numero_os }}{% endblock %}
+{% block title %}OS {{ chamado.numero_os }}{% endblock %}
+{% block page_title %}OS {{ chamado.numero_os }}{% endblock %}
 
 {% block content %}
-<div class="detail-card">
-    <header class="detail-header">
-        <div>
-            <h2 class="detail-title">OS {{ chamado.numero_os }}</h2>
-            <p class="detail-subtitle">Aberto em {{ chamado.data_abertura|date:"d/m/Y H:i" }}</p>
-        </div>
-        <div class="detail-status">
-            <span class="status-pill status-{{ chamado.status }}">{{ chamado.get_status_display }}</span>
-        </div>
-    </header>
-
-    <h3 class="detail-section-title">Dados do chamado</h3>
-    <dl class="detail-grid">
-        <div class="detail-item"><dt>Numero OS</dt><dd>{{ chamado.numero_os }}</dd></div>
-        <div class="detail-item"><dt>Status</dt><dd>{{ chamado.get_status_display }}</dd></div>
-        <div class="detail-item"><dt>Data de abertura</dt><dd>{{ chamado.data_abertura|date:"d/m/Y H:i" }}</dd></div>
-        <div class="detail-item"><dt>Fornecedor</dt><dd>{{ chamado.fornecedor.nome|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Solicitante</dt><dd>{{ chamado.solicitante|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Contato do solicitante</dt><dd>{{ chamado.contato_solicitante|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Denominacao</dt><dd>{{ chamado.denominacao|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Acao tomada</dt><dd>{{ chamado.acao_tomada|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Command Center</dt><dd>{{ chamado.command_center|default:"-" }}</dd></div>
-        <div class="detail-item detail-item-wide"><dt>Dados portaria / retirada de chave</dt><dd>{{ chamado.dados_portaria_retirada_chave|default:"-"|linebreaksbr }}</dd></div>
-        <div class="detail-item detail-item-wide"><dt>Detalhamento da situacao</dt><dd>{{ chamado.detalhamento_situacao|default:"-"|linebreaksbr }}</dd></div>
-        <div class="detail-item"><dt>Criado em</dt><dd>{{ chamado.criado_em|date:"d/m/Y H:i" }}</dd></div>
-        <div class="detail-item"><dt>Atualizado em</dt><dd>{{ chamado.atualizado_em|date:"d/m/Y H:i" }}</dd></div>
-    </dl>
-
-    <h3 class="detail-section-title">Ativo vinculado</h3>
-    <dl class="detail-grid">
-        <div class="detail-item"><dt>Ativo Prisma</dt><dd>{{ chamado.ativo.ativo_prisma }}</dd></div>
-        <div class="detail-item"><dt>Nome do site</dt><dd>{{ chamado.ativo.nome_site }}</dd></div>
-        <div class="detail-item detail-item-wide"><dt>Endereco</dt><dd>{{ chamado.ativo.endereco }}</dd></div>
-        <div class="detail-item"><dt>Cidade</dt><dd>{{ chamado.ativo.cidade }}</dd></div>
-        <div class="detail-item"><dt>UF</dt><dd>{{ chamado.ativo.uf }}</dd></div>
-        <div class="detail-item"><dt>Regional</dt><dd>{{ chamado.ativo.regional }}</dd></div>
-        <div class="detail-item"><dt>Tipo de imovel</dt><dd>{{ chamado.ativo.tipo_imovel|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Tipo site/SLA</dt><dd>{{ chamado.ativo.tipo_site_sla|default:"-" }}</dd></div>
-        <div class="detail-item"><dt>Lider coordenacao</dt><dd>{{ chamado.ativo.lider_coordenacao|default:"-" }}</dd></div>
-    </dl>
-
-    <section class="report-history">
-        <div class="section-header">
-            <h3 class="detail-section-title">Atualizações do chamado</h3>
-            <a href="{% url 'chamados:atualizar_report_form' chamado.pk %}" class="btn btn-primary">Atualizar report</a>
-        </div>
-
-        {% if atualizacoes %}
-        <div class="history-list">
-            {% for atualizacao in atualizacoes %}
-            <article class="history-item">
-                <header class="history-header">
-                    <div>
-                        <strong>{{ atualizacao.criado_em|date:"d/m/Y H:i" }}</strong>
-                        <span>{{ atualizacao.get_tipo_evento_display }}</span>
-                    </div>
-                    <span class="status-pill status-{{ atualizacao.status_resultante }}">{{ atualizacao.get_status_resultante_display }}</span>
-                </header>
-                <p class="history-user">Usuário: {{ atualizacao.criado_por.get_username|default:"-" }}</p>
-                <p class="history-text">{{ atualizacao.texto_atualizacao|linebreaksbr }}</p>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="empty-state">Nenhuma atualização registrada até o momento.</p>
-        {% endif %}
-    </section>
-
-    <section class="preview-card detail-preview-card">
-        <div class="preview-header">
-            <h3 class="preview-title">Texto WhatsApp atual</h3>
-            <button type="button" class="btn btn-primary" data-copy-target="texto-whatsapp-detalhe">Copiar texto WhatsApp</button>
-        </div>
-        <pre id="texto-whatsapp-detalhe" class="whatsapp-preview">{{ texto_whatsapp }}</pre>
-    </section>
-
-    <div class="detail-actions">
-        <a href="{% url 'chamados:chamados_list' %}" class="btn btn-secondary">Voltar para listagem</a>
-        <a href="{% url 'chamados:ativo_detail' chamado.ativo.pk %}" class="btn btn-link">Ver ativo</a>
-    </div>
+<div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin-bottom:1.25rem">
+    <a href="{% url 'chamados:atualizar_report_list' %}" class="btn btn-secondary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+    </a>
+    <a href="{% url 'chamados:atualizar_report_form' chamado.pk %}" class="btn btn-primary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Atualizar Report
+    </a>
 </div>
+
+<section class="os-header">
+    <div class="os-header-main">
+        <div class="os-header-ticket" aria-label="Número da OS">
+            <span class="os-header-ticket-eyebrow">Ordem de Serviço</span>
+            <span class="os-header-ticket-number">{{ chamado.numero_os }}</span>
+        </div>
+        <div class="os-header-site">
+            <h2 class="os-header-site-name">{{ chamado.ativo.nome_site|default:chamado.ativo.ativo_prisma }}</h2>
+            <div class="os-header-tags">
+                <span class="os-header-tag" title="Ativo Prisma">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    {{ chamado.ativo.ativo_prisma }}
+                </span>
+                {% if chamado.denominacao %}
+                <span class="os-header-tag" title="Categoria">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    {{ chamado.denominacao }}
+                </span>
+                {% endif %}
+                {% if chamado.ativo.cidade %}
+                <span class="os-header-tag" title="Localidade">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ chamado.ativo.cidade }}/{{ chamado.ativo.uf }}
+                </span>
+                {% endif %}
+                {% if chamado.ativo.regional %}
+                <span class="os-header-tag" title="Regional">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    {{ chamado.ativo.regional }}
+                </span>
+                {% endif %}
+                {% if chamado.ativo.tipo_imovel %}
+                <span class="os-header-tag" title="Tipo de imóvel">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22V9l9-7 9 7v13"/><path d="M9 22V12h6v10"/></svg>
+                    {{ chamado.ativo.tipo_imovel }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="os-header-meta">
+            {% if tempo_aberto %}
+            <span class="os-header-elapsed" title="Tempo desde a abertura">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Aberto há {{ tempo_aberto }}
+            </span>
+            {% endif %}
+            <span class="status-pill status-{{ chamado.status }} os-header-status">
+                <span class="os-header-status-dot" aria-hidden="true"></span>
+                {{ chamado.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <div class="os-chip-row">
+        <div class="os-chip">
+            <span class="os-chip-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </span>
+            <div>
+                <span class="os-chip-label">Abertura</span>
+                <span class="os-chip-value">
+                    {{ chamado.data_abertura|date:"d/m/Y H:i" }}
+                    {% if tempo_aberto and mostrar_sla %}
+                    <span class="sla-badge sla-{{ sla_class }}" title="Tempo desde a abertura">
+                        {{ tempo_aberto }}
+                    </span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        <div class="os-chip">
+            <span class="os-chip-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </span>
+            <div>
+                <span class="os-chip-label">Endereço</span>
+                <span class="os-chip-value">{{ chamado.ativo.endereco|default:"—" }}</span>
+            </div>
+        </div>
+        <div class="os-chip">
+            <span class="os-chip-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <div>
+                <span class="os-chip-label">Fornecedor</span>
+                <span class="os-chip-value">{{ chamado.fornecedor.nome|default:"—" }}</span>
+            </div>
+        </div>
+        {% if chamado.ativo.tipo_imovel %}
+        <div class="os-chip">
+            <span class="os-chip-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V9l9-7 9 7v13"/><path d="M9 22V12h6v10"/></svg>
+            </span>
+            <div>
+                <span class="os-chip-label">Imóvel</span>
+                <span class="os-chip-value">{{ chamado.ativo.tipo_imovel }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if chamado.detalhamento_situacao %}
+    <details class="os-detalhamento" open>
+        <summary>
+            <span class="os-detalhamento-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Detalhamento da situação
+            </span>
+            <span class="os-detalhamento-chevron" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+        </summary>
+        <p class="os-detalhamento-body">{{ chamado.detalhamento_situacao|linebreaksbr }}</p>
+    </details>
+    {% endif %}
+</section>
+
+<section style="margin-top:2rem">
+    <h3 style="font-size:1rem;font-weight:600;margin:0 0 1rem">Informações operacionais</h3>
+    <dl class="detail-grid">
+        <div class="detail-item"><dt>Solicitante</dt><dd>{{ chamado.solicitante|default:"—" }}</dd></div>
+        <div class="detail-item"><dt>Contato</dt><dd>{{ chamado.contato_solicitante|default:"—" }}</dd></div>
+        <div class="detail-item"><dt>Command Center</dt><dd>{{ chamado.command_center|default:"—" }}</dd></div>
+        <div class="detail-item"><dt>Ação tomada</dt><dd>{{ chamado.acao_tomada|default:"—" }}</dd></div>
+        <div class="detail-item detail-item-wide"><dt>Portaria / retirada de chave</dt><dd>{{ chamado.dados_portaria_retirada_chave|default:"—"|linebreaksbr }}</dd></div>
+    </dl>
+</section>
+
+<section style="margin-top:2.5rem;padding-top:2rem;border-top:1px solid rgba(255,255,255,.08)">
+    <h3 style="display:flex;align-items:center;gap:8px;font-size:1rem;font-weight:600;margin-bottom:1.25rem">
+        Histórico de atualizações
+        {% if atualizacoes %}
+        <span style="background:rgba(139,92,246,.2);color:#a78bfa;border-radius:999px;padding:1px 8px;font-size:.78rem">{{ atualizacoes|length }}</span>
+        {% endif %}
+    </h3>
+    {% if atualizacoes %}
+    <ol style="list-style:none;padding:0;margin:0">
+        {% for at in atualizacoes %}
+        <li style="display:flex;gap:16px;padding-bottom:1.5rem">
+            <div style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(139,92,246,.3);border:2px solid rgba(139,92,246,.6);margin-top:2px"></div>
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px">
+                    <span style="font-size:.8rem;color:var(--color-text-muted,#9ca3af)">{{ at.criado_em|date:"d/m/Y H:i" }}</span>
+                    <span class="status-pill status-{{ at.status_resultante }}">{{ at.get_status_resultante_display }}</span>
+                    {% if at.criado_por %}<span style="font-size:.78rem;color:var(--color-text-muted,#6b7280)">{{ at.criado_por.get_full_name|default:at.criado_por.username }}</span>{% endif %}
+                </div>
+                <p style="font-size:.88rem;color:var(--color-text,#d1d5db);line-height:1.55;margin:0;white-space:pre-wrap">{{ at.texto_atualizacao|linebreaksbr }}</p>
+                {% with evs=at.evidencias.all %}{% if evs %}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+                    {% for ev in evs %}
+                    <a href="{{ ev.arquivo.url }}" target="_blank" rel="noopener"
+                       style="display:block;width:72px;height:72px;border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)">
+                        {% if ev.is_imagem %}<img src="{{ ev.arquivo.url }}" alt="{{ ev.legenda|default:'Evidência' }}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+                        {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted,#9ca3af);font-size:.65rem">{{ ev.tipo }}</div>{% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}{% endwith %}
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <div class="empty-state" style="text-align:center;padding:1.5rem 1rem;color:var(--color-text-muted,#9ca3af);border:1px dashed rgba(255,255,255,.1);border-radius:10px">
+        Nenhuma atualização registrada até o momento.
+    </div>
+    {% endif %}
+</section>
 {% endblock %}

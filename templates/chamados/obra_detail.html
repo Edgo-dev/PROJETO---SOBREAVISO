@@ -1,53 +1,220 @@
 {% extends "base.html" %}
-
-{% block title %}Obra · {{ obra.ativo.nome_site }}{% endblock %}
+{% block title %}Obra — {{ obra.ativo.nome_site }}{% endblock %}
 {% block page_title %}Detalhe da obra{% endblock %}
 
 {% block content %}
-<div class="detail-card">
-    <header class="detail-header">
-        <div>
-            <h2 class="detail-title">{{ obra.ativo.nome_site }}</h2>
-            <p class="detail-subtitle">{{ obra.ativo.ativo_prisma }} · {{ obra.ativo.cidade }}/{{ obra.ativo.uf }}</p>
-        </div>
-        <div class="detail-status">
-            <span class="status-pill situacao-{{ obra.situacao }}">
-                <span class="status-dot"></span> {{ obra.situacao_label }}
-            </span>
-        </div>
-    </header>
+<style>
+.obra-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1rem;flex-wrap:wrap}
+.obra-title{font-size:1.2rem;font-weight:600;margin-bottom:3px}
+.obra-sub{font-size:.8rem;color:var(--color-text-muted,#9ca3af)}
+.obra-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.obra-badge-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 
-    <h3 class="detail-section-title">Descrição da obra</h3>
-    <p class="obra-descricao-bloco">{{ obra.descricao|linebreaksbr }}</p>
+.obra-banner{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-size:.82rem;margin-bottom:.75rem}
+.obra-banner--amber{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:#d97706}
+.obra-banner--red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#ef4444}
+.obra-banner--green{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:#10b981}
 
-    <h3 class="detail-section-title">Cronograma</h3>
-    <dl class="detail-grid">
-        <div class="detail-item"><dt>Data de início</dt><dd>{{ obra.data_inicio|date:"d/m/Y" }}</dd></div>
-        <div class="detail-item"><dt>Data fim planejada</dt><dd>{{ obra.data_fim_planejada|date:"d/m/Y" }}</dd></div>
-        <div class="detail-item"><dt>Data fim real</dt><dd>{{ obra.data_fim_real|date:"d/m/Y"|default:"—" }}</dd></div>
-        <div class="detail-item"><dt>Responsável</dt><dd>{{ obra.responsavel|default:"—" }}</dd></div>
-    </dl>
+.obra-progress-card{background:var(--color-surface,rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin-bottom:.75rem}
+.obra-progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.obra-progress-label{font-size:.75rem;color:var(--color-text-muted,#9ca3af);text-transform:uppercase;letter-spacing:.05em}
+.obra-progress-pct{font-size:1.3rem;font-weight:700;color:#10b981}
+.obra-progress-pct--amber{color:#f59e0b}
+.obra-progress-pct--roxo{color:#a78bfa}
+.obra-progress-bg{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:8px}
+.obra-progress-fill{height:100%;border-radius:999px;background:#10b981;transition:width .3s}
+.obra-progress-fill--amber{background:#f59e0b}
+.obra-progress-fill--red{background:#ef4444}
+.obra-progress-meta{display:flex;gap:16px;flex-wrap:wrap}
+.obra-progress-meta span{font-size:.78rem;color:var(--color-text-muted,#9ca3af)}
+.obra-progress-meta strong{color:var(--color-text,#e5e7eb)}
+.obra-progress-dias{font-size:.78rem;font-weight:600;color:#10b981}
+.obra-progress-dias--amber{color:#f59e0b}
+.obra-progress-dias--red{color:#ef4444}
 
-    <h3 class="detail-section-title">Ativo vinculado</h3>
-    <dl class="detail-grid">
-        <div class="detail-item"><dt>Ativo Prisma</dt><dd>{{ obra.ativo.ativo_prisma }}</dd></div>
-        <div class="detail-item"><dt>Nome do site</dt><dd>{{ obra.ativo.nome_site }}</dd></div>
-        <div class="detail-item detail-item-wide"><dt>Endereço</dt><dd>{{ obra.ativo.endereco }}</dd></div>
-        <div class="detail-item"><dt>Cidade</dt><dd>{{ obra.ativo.cidade }}</dd></div>
-        <div class="detail-item"><dt>UF</dt><dd>{{ obra.ativo.uf }}</dd></div>
-        <div class="detail-item"><dt>Regional</dt><dd>{{ obra.ativo.regional }}</dd></div>
-        <div class="detail-item"><dt>Tipo de imóvel</dt><dd>{{ obra.ativo.tipo_imovel|default:"—" }}</dd></div>
-    </dl>
+.obra-grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.obra-card{background:var(--color-surface,rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px}
+.obra-card-title{font-size:.7rem;font-weight:600;color:var(--color-text-muted,#9ca3af);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.obra-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.obra-field{}
+.obra-field-label{font-size:.68rem;color:var(--color-text-muted,#9ca3af);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.obra-field-value{font-size:.85rem;color:var(--color-text,#e5e7eb)}
+.obra-field-value--link{color:#a78bfa}
+.obra-field-value--muted{color:var(--color-text-muted,#6b7280)}
+.obra-field-value--green{color:#10b981}
+.obra-field--full{grid-column:1/-1}
 
-    {% if obra.observacoes %}
-    <h3 class="detail-section-title">Observações</h3>
-    <p class="obra-descricao-bloco">{{ obra.observacoes|linebreaksbr }}</p>
-    {% endif %}
+.obra-accordion{background:var(--color-surface,rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden;margin-bottom:.75rem}
+.obra-accordion summary{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;font-size:.88rem;font-weight:500;list-style:none;user-select:none}
+.obra-accordion summary::-webkit-details-marker{display:none}
+.obra-accordion summary svg{transition:transform .2s;flex-shrink:0}
+.obra-accordion[open] summary svg{transform:rotate(180deg)}
+.obra-accordion-body{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:.85rem;color:var(--color-text-muted,#9ca3af);line-height:1.6}
 
-    <div class="detail-actions">
-        <a href="{% url 'chamados:obra_update' obra.pk %}" class="btn btn-primary">Editar</a>
-        <a href="{% url 'chamados:ativo_detail' obra.ativo.pk %}" class="btn btn-secondary">Ver ativo</a>
-        <a href="{% url 'chamados:obras_list' %}" class="btn btn-link">Voltar para a listagem</a>
+@media(max-width:640px){
+  .obra-grid2{grid-template-columns:1fr}
+  .obra-top{flex-direction:column}
+  .obra-badge-wrap{align-items:flex-start}
+}
+</style>
+
+<div class="obra-top">
+  <div>
+    <div class="obra-title">{{ obra.ativo.nome_site }}</div>
+    <div class="obra-sub">
+      {{ obra.ativo.ativo_prisma }}
+      {% if obra.ativo.cidade %} · {{ obra.ativo.cidade }}/{{ obra.ativo.uf }}{% endif %}
+      {% if obra.ativo.regional %} · {{ obra.ativo.regional }}{% endif %}
     </div>
+  </div>
+  <div class="obra-badge-wrap">
+    <span class="status-pill status-{{ obra.situacao }}">● {{ obra.situacao_label }}</span>
+    <div class="obra-actions">
+      <a href="{% url 'chamados:obras_list' %}" class="btn btn-secondary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+      </a>
+      <a href="{% url 'chamados:ativo_detail' obra.ativo.pk %}" class="btn btn-secondary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22V9l9-7 9 7v13"/><path d="M9 22V12h6v10"/></svg>
+        Ver ativo
+      </a>
+      <a href="{% url 'chamados:obra_update' obra.pk %}" class="btn btn-secondary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </a>
+      {% if not obra.data_fim_real %}
+      <a href="{% url 'chamados:obra_concluir' obra.pk %}" class="btn btn-secondary btn-with-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Concluir obra
+      </a>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+{% if dias_atraso %}
+<div class="obra-banner obra-banner--red">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  Esta obra está <strong>&nbsp;{{ dias_atraso }} dias em atraso</strong> — prazo era {{ obra.data_fim_planejada|date:"d/m/Y" }}
+</div>
+{% elif alerta_proximidade %}
+<div class="obra-banner obra-banner--amber">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  Atenção: faltam <strong>&nbsp;{{ dias_restantes }} dias</strong> para o prazo final — {{ obra.data_fim_planejada|date:"d/m/Y" }}
+</div>
+{% elif obra.data_fim_real %}
+<div class="obra-banner obra-banner--green">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  Obra concluída em <strong>&nbsp;{{ obra.data_fim_real|date:"d/m/Y" }}</strong>
+</div>
+{% endif %}
+
+{% if not obra.data_fim_real and obra.ativa %}
+<div class="obra-progress-card">
+  <div class="obra-progress-header">
+    <span class="obra-progress-label">Progresso da obra</span>
+    <span class="obra-progress-pct {% if progresso >= 80 %}obra-progress-pct--amber{% endif %}">{{ progresso }}%</span>
+  </div>
+  <div class="obra-progress-bg">
+    <div class="obra-progress-fill {% if dias_atraso %}obra-progress-fill--red{% elif progresso >= 80 %}obra-progress-fill--amber{% endif %}"
+         style="width:{{ progresso }}%"></div>
+  </div>
+  <div class="obra-progress-meta">
+    <span>Início: <strong>{{ obra.data_inicio|date:"d/m/Y" }}</strong></span>
+    <span>Prazo: <strong>{{ obra.data_fim_planejada|date:"d/m/Y" }}</strong></span>
+    {% if dias_restantes is not None %}
+    <span class="obra-progress-dias {% if alerta_proximidade %}obra-progress-dias--amber{% endif %}">
+      ● {{ dias_restantes }} dias restantes
+    </span>
+    {% elif dias_atraso %}
+    <span class="obra-progress-dias obra-progress-dias--red">● {{ dias_atraso }} dias em atraso</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="obra-grid2">
+  <div class="obra-card">
+    <div class="obra-card-title">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Cronograma
+    </div>
+    <div class="obra-fields">
+      <div class="obra-field">
+        <div class="obra-field-label">Data de início</div>
+        <div class="obra-field-value">{{ obra.data_inicio|date:"d/m/Y" }}</div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Fim planejado</div>
+        <div class="obra-field-value">{{ obra.data_fim_planejada|date:"d/m/Y" }}</div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Fim real</div>
+        <div class="obra-field-value {% if obra.data_fim_real %}obra-field-value--green{% else %}obra-field-value--muted{% endif %}">
+          {{ obra.data_fim_real|date:"d/m/Y"|default:"—" }}
+        </div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Responsável</div>
+        <div class="obra-field-value">{{ obra.responsavel|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="obra-card">
+    <div class="obra-card-title">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22V9l9-7 9 7v13"/><path d="M9 22V12h6v10"/></svg>
+      Ativo vinculado
+    </div>
+    <div class="obra-fields">
+      <div class="obra-field">
+        <div class="obra-field-label">Ativo Prisma</div>
+        <div class="obra-field-value">
+          <a href="{% url 'chamados:ativo_detail' obra.ativo.pk %}" class="obra-field-value--link">{{ obra.ativo.ativo_prisma }}</a>
+        </div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Nome do site</div>
+        <div class="obra-field-value">{{ obra.ativo.nome_site|default:"—" }}</div>
+      </div>
+      <div class="obra-field obra-field--full">
+        <div class="obra-field-label">Endereço</div>
+        <div class="obra-field-value">{{ obra.ativo.endereco|default:"—" }}</div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Cidade/UF</div>
+        <div class="obra-field-value">{{ obra.ativo.cidade }}/{{ obra.ativo.uf }}</div>
+      </div>
+      <div class="obra-field">
+        <div class="obra-field-label">Regional</div>
+        <div class="obra-field-value">{{ obra.ativo.regional|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<details class="obra-accordion" open>
+  <summary>
+    <span style="display:flex;align-items:center;gap:8px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Descrição da obra
+    </span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+  </summary>
+  <div class="obra-accordion-body">{{ obra.descricao|linebreaksbr }}</div>
+</details>
+
+{% if obra.observacoes %}
+<details class="obra-accordion">
+  <summary>
+    <span style="display:flex;align-items:center;gap:8px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Observações
+    </span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+  </summary>
+  <div class="obra-accordion-body">{{ obra.observacoes|linebreaksbr }}</div>
+</details>
+{% endif %}
+
 {% endblock %}

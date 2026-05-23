@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Excluir supervisor{% endblock %}
+{% block page_title %}Excluir supervisor{% endblock %}
+{% block content %}
+{% url 'chamados:fornecedores_list' as url_cancelar %}
+{% url 'chamados:fornecedor_delete' fornecedor.pk as url_action %}
+<div style="min-height:100vh;display:flex;align-items:center;
+            justify-content:center;padding:2rem">
+  <div style="background:rgba(255,255,255,.04);
+              border:1px solid rgba(255,255,255,.08);
+              border-radius:12px;padding:2rem;
+              max-width:480px;width:100%;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;
+                background:rgba(239,68,68,.15);
+                border:2px solid rgba(239,68,68,.4);
+                display:flex;align-items:center;
+                justify-content:center;margin:0 auto 1.25rem">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+           stroke="#ef4444" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </svg>
+    </div>
+    <h2 style="font-size:1.2rem;font-weight:600;
+               margin-bottom:.5rem">Excluir supervisor</h2>
+    <p style="color:#9ca3af;font-size:.9rem;margin-bottom:.5rem">
+      Esta ação não pode ser desfeita.
+      Fornecedores com chamados vinculados não podem ser excluídos.
+    </p>
+    <p style="background:rgba(255,255,255,.06);border-radius:6px;
+              padding:.5rem 1rem;font-size:.85rem;
+              margin-bottom:1.5rem;font-weight:500">
+      {{ fornecedor.nome }}
+      {% if fornecedor.empresa %} — {{ fornecedor.empresa }}{% endif %}
+    </p>
+    <div style="display:flex;gap:.75rem;justify-content:center">
+      <a href="{{ url_cancelar }}" class="btn btn-secondary">
+        Cancelar
+      </a>
+      <form method="post" action="{{ url_action }}"
+            style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary"
+                style="background:#dc2626;border-color:#dc2626">
+          Confirmar exclusão
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

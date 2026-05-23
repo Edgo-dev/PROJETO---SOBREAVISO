@@ -1,0 +1,53 @@
+{% comment %}
+Partial: confirm_card
+Parâmetros esperados no contexto:
+  - confirm_titulo: string (ex: "Excluir supervisor")
+  - confirm_icone_cor: string CSS (ex: "rgba(239,68,68,.15)")
+  - confirm_icone_borda: string CSS (ex: "rgba(239,68,68,.4)")
+  - confirm_destaque: string (nome do item a confirmar)
+  - confirm_aviso: string (ex: "Esta ação não pode ser desfeita.")
+  - confirm_url_cancelar: url name resolvida
+  - confirm_url_action: url name resolvida (action do form POST)
+  - confirm_btn_texto: string (ex: "Confirmar exclusão")
+  - confirm_btn_cor: string CSS (ex: "#dc2626")
+{% endcomment %}
+<div style="min-height:100vh;display:flex;align-items:center;
+            justify-content:center;padding:2rem">
+  <div style="background:rgba(255,255,255,.04);
+              border:1px solid rgba(255,255,255,.08);
+              border-radius:12px;padding:2rem;
+              max-width:480px;width:100%;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;
+                background:{{ confirm_icone_cor }};
+                border:2px solid {{ confirm_icone_borda }};
+                display:flex;align-items:center;
+                justify-content:center;margin:0 auto 1.25rem">
+      {% block confirm_icone %}{% endblock %}
+    </div>
+    <h2 style="font-size:1.2rem;font-weight:600;
+               margin-bottom:.5rem">{{ confirm_titulo }}</h2>
+    <p style="color:#9ca3af;font-size:.9rem;margin-bottom:.5rem">
+      {{ confirm_aviso }}
+    </p>
+    {% if confirm_destaque %}
+    <p style="background:rgba(255,255,255,.06);
+              border-radius:6px;padding:.5rem 1rem;
+              font-size:.85rem;margin-bottom:1.5rem;
+              font-weight:500">{{ confirm_destaque }}</p>
+    {% endif %}
+    <div style="display:flex;gap:.75rem;justify-content:center;
+                flex-wrap:wrap">
+      <a href="{{ confirm_url_cancelar }}"
+         class="btn btn-secondary">Cancelar</a>
+      <form method="post" action="{{ confirm_url_action }}"
+            style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary"
+                style="background:{{ confirm_btn_cor }};
+                       border-color:{{ confirm_btn_cor }}">
+          {{ confirm_btn_texto }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

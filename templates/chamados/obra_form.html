@@ -1,70 +1,147 @@
 {% extends "base.html" %}
-
-{% block title %}{{ titulo }}{% endblock %}
-{% block page_title %}{{ titulo }}{% endblock %}
+{% block title %}{% if modo == "novo" %}Nova obra{% else %}Editar obra · {{ obra.ativo.nome_site }}{% endif %}{% endblock %}
+{% block page_title %}{% if modo == "novo" %}Nova obra{% else %}Editar obra{% endif %}{% endblock %}
 
 {% block content %}
-<form method="post" class="form-card" novalidate>
-    {% csrf_token %}
+<style>
+.of-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.25rem;flex-wrap:wrap}
+.of-title{font-size:1.1rem;font-weight:600;margin-bottom:2px;color:var(--color-text,#e5e7eb)}
+.of-sub{font-size:.78rem;color:var(--color-text-muted,#6b7280)}
+.of-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin-bottom:.75rem}
+.of-card-title{font-size:.68rem;font-weight:600;color:var(--color-text-muted,#6b7280);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.of-grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.of-field{margin-bottom:10px}
+.of-field:last-child{margin-bottom:0}
+.of-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.of-label{font-size:.72rem;color:var(--color-text-muted,#6b7280);margin-bottom:4px;display:block}
+.of-hint{font-size:.68rem;color:var(--color-text-muted,#4b5563);margin-top:3px}
+.of-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.06);margin-top:.25rem}
+.of-checkbox-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2)}
+.of-checkbox-text .of-checkbox-label{font-size:.82rem}
+.of-checkbox-text .of-checkbox-hint{font-size:.68rem;color:var(--color-text-muted,#4b5563);margin-top:1px}
+@media(max-width:600px){.of-grid2{grid-template-columns:1fr}.of-field-row{grid-template-columns:1fr}}
+</style>
 
-    {% if form.non_field_errors %}
-    <div class="form-errors">{{ form.non_field_errors }}</div>
+<form method="post" novalidate>
+{% csrf_token %}
+
+{% if form.non_field_errors %}
+<div class="form-errors" style="margin-bottom:.75rem">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<div class="of-top">
+  <div>
+    <div class="of-title">
+      {% if modo == "novo" %}Nova obra{% else %}Editar obra{% endif %}
+    </div>
+    {% if modo == "editar" and obra %}
+    <div class="of-sub">{{ obra.ativo.nome_site }} · {{ obra.ativo.ativo_prisma }}</div>
     {% endif %}
+  </div>
+  <a href="{% if modo == "editar" and obra %}{% url 'chamados:obra_detail' obra.pk %}{% else %}{% url 'chamados:obras_list' %}{% endif %}"
+     class="btn btn-secondary">← Cancelar</a>
+</div>
 
-    <h2 class="form-section-title">Local da obra</h2>
-    <div class="form-grid">
-        <div class="form-field form-field-wide">
-            <label for="{{ form.ativo.id_for_label }}">Ativo *</label>
-            {{ form.ativo }}
-            {% if form.ativo.errors %}<small class="field-error">{{ form.ativo.errors|join:" " }}</small>{% endif %}
-        </div>
+<div class="of-card">
+  <div class="of-card-title">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22V9l9-7 9 7v13"/><path d="M9 22V12h6v10"/></svg>
+    Local da obra
+  </div>
+  <div class="of-field">
+    <label class="of-label" for="{{ form.ativo.id_for_label }}">
+      Ativo <span style="color:#a78bfa">*</span>
+    </label>
+    {{ form.ativo }}
+    {% if form.ativo.errors %}<small class="field-error">{{ form.ativo.errors|join:" " }}</small>{% endif %}
+    <div class="of-hint">Busque pelo código Prisma, nome do site ou cidade</div>
+  </div>
+</div>
+
+<div class="of-grid2">
+
+  <div class="of-card" style="margin-bottom:0">
+    <div class="of-card-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Cronograma
     </div>
 
-    <h2 class="form-section-title">Cronograma</h2>
-    <div class="form-grid">
-        <div class="form-field">
-            <label for="{{ form.data_inicio.id_for_label }}">Data de início *</label>
-            {{ form.data_inicio }}
-            {% if form.data_inicio.errors %}<small class="field-error">{{ form.data_inicio.errors|join:" " }}</small>{% endif %}
-        </div>
-        <div class="form-field">
-            <label for="{{ form.data_fim_planejada.id_for_label }}">Data fim planejada *</label>
-            {{ form.data_fim_planejada }}
-            {% if form.data_fim_planejada.errors %}<small class="field-error">{{ form.data_fim_planejada.errors|join:" " }}</small>{% endif %}
-        </div>
-        <div class="form-field">
-            <label for="{{ form.data_fim_real.id_for_label }}">Data fim real</label>
-            {{ form.data_fim_real }}
-            <small class="field-hint">Preencha apenas quando a obra for efetivamente concluída.</small>
-        </div>
-        <div class="form-field form-field-checkbox">
-            <label for="{{ form.ativa.id_for_label }}">
-                {{ form.ativa }} Obra ativa
-            </label>
-        </div>
+    <div class="of-field-row" style="margin-bottom:10px">
+      <div class="of-field" style="margin:0">
+        <label class="of-label" for="{{ form.data_inicio.id_for_label }}">
+          Data de início <span style="color:#a78bfa">*</span>
+        </label>
+        {{ form.data_inicio }}
+        {% if form.data_inicio.errors %}<small class="field-error">{{ form.data_inicio.errors|join:" " }}</small>{% endif %}
+      </div>
+      <div class="of-field" style="margin:0">
+        <label class="of-label" for="{{ form.data_fim_planejada.id_for_label }}">
+          Fim planejado <span style="color:#a78bfa">*</span>
+        </label>
+        {{ form.data_fim_planejada }}
+        {% if form.data_fim_planejada.errors %}<small class="field-error">{{ form.data_fim_planejada.errors|join:" " }}</small>{% endif %}
+      </div>
     </div>
 
-    <h2 class="form-section-title">Descrição da obra</h2>
-    <div class="form-grid">
-        <div class="form-field form-field-wide">
-            <label for="{{ form.descricao.id_for_label }}">O que está sendo feito? *</label>
-            {{ form.descricao }}
-            <small class="field-hint">Esta descrição é exibida no alerta de obra durante a abertura de chamados.</small>
-            {% if form.descricao.errors %}<small class="field-error">{{ form.descricao.errors|join:" " }}</small>{% endif %}
-        </div>
-        <div class="form-field form-field-wide">
-            <label for="{{ form.responsavel.id_for_label }}">Responsável pela obra</label>
-            {{ form.responsavel }}
-        </div>
-        <div class="form-field form-field-wide">
-            <label for="{{ form.observacoes.id_for_label }}">Observações</label>
-            {{ form.observacoes }}
-        </div>
+    <div class="of-field">
+      <label class="of-label" for="{{ form.data_fim_real.id_for_label }}">Fim real</label>
+      {{ form.data_fim_real }}
+      {% if form.data_fim_real.errors %}<small class="field-error">{{ form.data_fim_real.errors|join:" " }}</small>{% endif %}
+      <div class="of-hint">Preencha apenas ao concluir efetivamente</div>
     </div>
 
-    <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'chamados:obras_list' %}" class="btn btn-secondary">Cancelar</a>
+    <div class="of-checkbox-row">
+      {{ form.ativa }}
+      <div class="of-checkbox-text">
+        <div class="of-checkbox-label">Obra ativa</div>
+        <div class="of-checkbox-hint">Desmarque para arquivar sem concluir</div>
+      </div>
     </div>
+    {% if form.ativa.errors %}<small class="field-error">{{ form.ativa.errors|join:" " }}</small>{% endif %}
+  </div>
+
+  <div class="of-card" style="margin-bottom:0">
+    <div class="of-card-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Responsável
+    </div>
+    <div class="of-field">
+      <label class="of-label" for="{{ form.responsavel.id_for_label }}">Responsável pela obra</label>
+      {{ form.responsavel }}
+      {% if form.responsavel.errors %}<small class="field-error">{{ form.responsavel.errors|join:" " }}</small>{% endif %}
+      <div class="of-hint">Empresa ou pessoa responsável pela execução</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="of-card" style="margin-top:.75rem">
+  <div class="of-card-title">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Descrição e observações
+  </div>
+  <div class="of-field">
+    <label class="of-label" for="{{ form.descricao.id_for_label }}">
+      O que está sendo feito? <span style="color:#a78bfa">*</span>
+    </label>
+    {{ form.descricao }}
+    {% if form.descricao.errors %}<small class="field-error">{{ form.descricao.errors|join:" " }}</small>{% endif %}
+    <div class="of-hint">Exibida no alerta ao abrir chamados neste endereço</div>
+  </div>
+  <div class="of-field">
+    <label class="of-label" for="{{ form.observacoes.id_for_label }}">Observações</label>
+    {{ form.observacoes }}
+    {% if form.observacoes.errors %}<small class="field-error">{{ form.observacoes.errors|join:" " }}</small>{% endif %}
+  </div>
+</div>
+
+<div class="of-actions">
+  <a href="{% if modo == "editar" and obra %}{% url 'chamados:obra_detail' obra.pk %}{% else %}{% url 'chamados:obras_list' %}{% endif %}"
+     class="btn btn-secondary">Cancelar</a>
+  <button type="submit" class="btn btn-primary btn-with-icon">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    {% if modo == "novo" %}Criar obra{% else %}Salvar alterações{% endif %}
+  </button>
+</div>
+
 </form>
 {% endblock %}

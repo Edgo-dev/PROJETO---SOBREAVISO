@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Atualizar Report {{ chamado.numero_os }}{% endblock %}
 {% block page_title %}Atualizar Report {{ chamado.numero_os }}{% endblock %}
@@ -129,7 +130,7 @@
 </div>
 
 <div class="report-workspace">
-    <form method="post" class="form-card report-form" novalidate>
+    <form method="post" class="form-card report-form" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -160,6 +161,25 @@
             </div>
         </div>
 
+        <div class="report-form-section">
+            <h3 class="report-form-section-title">
+                <span class="report-form-step">3</span>
+                Evidências
+                <span style="font-size:.7rem;font-weight:400;color:var(--color-text-muted,#9ca3af);margin-left:4px">opcional</span>
+            </h3>
+            <p class="report-form-section-hint">Fotos, vídeos ou PDFs que comprovam o status. Máx. 10 arquivos.</p>
+            <div class="evidencia-dropzone" id="evidencia-dropzone" role="button" tabindex="0">
+                <input type="file" id="evidencias-input" name="evidencias" multiple
+                       accept="image/*,video/*,.pdf"
+                       style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+                <div id="evidencia-idle" style="text-align:center;padding:20px 0;color:var(--color-text-muted,#9ca3af)">
+                    <p style="margin:0">Arraste arquivos aqui ou <span style="color:#a78bfa;text-decoration:underline;cursor:pointer">clique para selecionar</span></p>
+                    <small>Imagens, vídeos ou PDFs · Máx. 10 arquivos</small>
+                </div>
+                <div id="evidencia-preview-grid" hidden style="display:flex;flex-wrap:wrap;gap:10px;padding-top:4px"></div>
+            </div>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-with-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
@@ -185,4 +205,51 @@
         <pre id="texto-whatsapp-preview" class="whatsapp-preview">{{ texto_whatsapp }}</pre>
     </section>
 </div>
+
+{% with atualizacoes=chamado.atualizacoes.all %}
+{% if atualizacoes %}
+<section class="historico-section" style="margin-top:2.5rem;padding-top:2rem;border-top:1px solid rgba(255,255,255,.08)">
+    <details class="os-detalhamento">
+        <summary>
+            <span class="os-detalhamento-title" style="display:flex;align-items:center;gap:8px;font-size:1rem;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Histórico de atualizações
+                <span class="historico-count" style="background:rgba(139,92,246,.2);color:#a78bfa;border-radius:999px;padding:1px 8px;font-size:.78rem">{{ atualizacoes.count }}</span>
+            </span>
+            <span class="os-detalhamento-chevron" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+        </summary>
+    <ol class="historico-timeline" style="list-style:none;padding:0;margin:1.25rem 0 0">
+        {% for at in atualizacoes %}
+        <li style="display:flex;gap:16px;padding-bottom:1.5rem">
+            <div style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(139,92,246,.3);border:2px solid rgba(139,92,246,.6);margin-top:2px"></div>
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px">
+                    <span style="font-size:.8rem;color:var(--color-text-muted,#9ca3af)">{{ at.criado_em|date:"d/m/Y H:i" }}</span>
+                    <span class="status-pill status-{{ at.status_resultante }}">{{ at.get_status_resultante_display }}</span>
+                    {% if at.criado_por %}<span style="font-size:.78rem;color:var(--color-text-muted,#6b7280)">{{ at.criado_por.get_full_name|default:at.criado_por.username }}</span>{% endif %}
+                </div>
+                <p style="font-size:.88rem;color:var(--color-text,#d1d5db);line-height:1.55;margin:0;white-space:pre-wrap">{{ at.texto_atualizacao|linebreaksbr }}</p>
+                {% with evs=at.evidencias.all %}{% if evs %}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+                    {% for ev in evs %}
+                    <a href="{{ ev.arquivo.url }}" target="_blank" rel="noopener"
+                       style="display:block;width:72px;height:72px;border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)">
+                        {% if ev.is_imagem %}<img src="{{ ev.arquivo.url }}" alt="{{ ev.legenda|default:'Evidência' }}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+                        {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted,#9ca3af);font-size:.65rem">{{ ev.tipo }}</div>{% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}{% endwith %}
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+    </details>
+</section>
+{% endif %}
+{% endwith %}
+
+<script src="{% static 'js/evidencia_dropzone.js' %}"></script>
 {% endblock %}

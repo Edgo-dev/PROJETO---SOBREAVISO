@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Concluir obra{% endblock %}
+{% block page_title %}Concluir obra{% endblock %}
+{% block content %}
+{% url 'chamados:obras_list' as url_cancelar %}
+{% url 'chamados:obra_concluir' obra.pk as url_action %}
+<div style="min-height:100vh;display:flex;align-items:center;
+            justify-content:center;padding:2rem">
+  <div style="background:rgba(255,255,255,.04);
+              border:1px solid rgba(255,255,255,.08);
+              border-radius:12px;padding:2rem;
+              max-width:480px;width:100%;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;
+                background:rgba(16,185,129,.15);
+                border:2px solid rgba(16,185,129,.4);
+                display:flex;align-items:center;
+                justify-content:center;margin:0 auto 1.25rem">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+           stroke="#10b981" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h2 style="font-size:1.2rem;font-weight:600;
+               margin-bottom:.5rem">Concluir obra</h2>
+    <p style="color:#9ca3af;font-size:.9rem;margin-bottom:.5rem">
+      Será registrada a data de hoje como data de conclusão.
+    </p>
+    <p style="background:rgba(255,255,255,.06);border-radius:6px;
+              padding:.5rem 1rem;font-size:.85rem;
+              margin-bottom:1.5rem;font-weight:500">
+      {{ obra.ativo.nome_site }}
+    </p>
+    <div style="display:flex;gap:.75rem;justify-content:center">
+      <a href="{{ url_cancelar }}" class="btn btn-secondary">
+        Cancelar
+      </a>
+      <form method="post" action="{{ url_action }}"
+            style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary"
+                style="background:#10b981;border-color:#10b981">
+          Confirmar conclusão
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
