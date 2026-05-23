@@ -430,6 +430,25 @@ class ObraForm(forms.ModelForm):
         for nome in ("data_inicio", "data_fim_planejada", "data_fim_real"):
             self.fields[nome].input_formats = ["%Y-%m-%d", "%d/%m/%Y"]
 
+        dark = (
+            "background:rgba(255,255,255,.05);"
+            "border:1px solid rgba(255,255,255,.08);"
+            "color:#e5e7eb;"
+            "border-radius:6px;"
+            "padding:7px 10px;"
+            "width:100%;"
+        )
+        for nome in (
+            "ativo",
+            "descricao",
+            "data_inicio",
+            "data_fim_planejada",
+            "data_fim_real",
+            "responsavel",
+            "observacoes",
+        ):
+            self.fields[nome].widget.attrs["style"] = dark
+
     def clean_descricao(self):
         return self.cleaned_data.get("descricao", "").strip()
 

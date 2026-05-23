@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Ativo, AtualizacaoChamado, Chamado, Fornecedor, Obra
+from .models import Ativo, AtualizacaoChamado, Chamado, Evidencia, Fornecedor, Obra
 
 
 @admin.register(Fornecedor)
@@ -82,3 +82,10 @@ class AtualizacaoChamadoAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("chamado",)
     ordering = ("-criado_em",)
+
+
+@admin.register(Evidencia)
+class EvidenciaAdmin(admin.ModelAdmin):
+    list_display = ("pk", "atualizacao", "tipo", "nome_arquivo", "criado_em")
+    list_filter = ("tipo",)
+    raw_id_fields = ("atualizacao",)
