@@ -1,0 +1,22 @@
+{% extends "chamados/auth_base.html" %}
+
+{% block title %}Acesso temporariamente bloqueado · Sobreaviso{% endblock %}
+{% block eyebrow %}Segurança{% endblock %}
+{% block card_title %}Muitas tentativas de login{% endblock %}
+
+{% block card_body %}
+<div class="auth-form">
+    <p class="auth-help">
+        Detectamos tentativas de login malsucedidas em excesso para este
+        usuário. Por segurança, o acesso foi temporariamente bloqueado.
+    </p>
+    <p class="auth-help">
+        Aguarde alguns minutos e tente novamente. Se você esqueceu a senha,
+        use a opção de recuperação de senha.
+    </p>
+    <div class="auth-actions">
+        <a class="auth-submit" href="{% url 'chamados:login' %}">Voltar ao login</a>
+        <a class="auth-link" href="{% url 'chamados:password_reset' %}">Recuperar senha</a>
+    </div>
+</div>
+{% endblock %}

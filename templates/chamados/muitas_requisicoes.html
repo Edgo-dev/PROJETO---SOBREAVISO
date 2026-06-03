@@ -1,0 +1,20 @@
+{% extends "chamados/auth_base.html" %}
+
+{% block title %}Muitas requisições · Sobreaviso{% endblock %}
+{% block eyebrow %}Segurança{% endblock %}
+{% block card_title %}Muitas tentativas em pouco tempo{% endblock %}
+
+{% block card_body %}
+<div class="auth-form">
+    <p class="auth-help">
+        Recebemos requisições demais deste endereço em um curto intervalo.
+        Por segurança, esta ação foi temporariamente limitada.
+    </p>
+    <p class="auth-help">
+        Aguarde alguns minutos e tente novamente.
+    </p>
+    <div class="auth-actions">
+        <a class="auth-submit" href="{% url 'chamados:login' %}">Voltar ao login</a>
+    </div>
+</div>
+{% endblock %}

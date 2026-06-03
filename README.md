@@ -45,6 +45,31 @@ importações, não bloqueio por papel de usuário.
   Fornecedores: planilha com coluna ausente ou célula vazia NÃO sobrescreve
   o valor existente do registro.
 
+## Proteções de segurança implementadas
+
+Independentes da decisão de "sistema aberto para qualquer logado" (ver
+abaixo), estão ativas as seguintes defesas técnicas:
+
+- **`SECRET_KEY` obrigatória em produção**: com `DEBUG=False`, a ausência de
+  `DJANGO_SECRET_KEY` levanta `ImproperlyConfigured` e impede o boot — nunca
+  sobe com chave previsível. Em DEV, cai para uma chave insegura com aviso.
+- **Força bruta no login** mitigada por **django-axes**: lockout por
+  combinação (usuário + IP), limite de 5 tentativas, cooloff de 30 min,
+  reset no sucesso. Bloqueio exibe `templates/chamados/lockout.html`.
+- **Rate limiting de cadastro e recuperação de senha** (que o axes não
+  cobre): limite por IP via cache (`chamados/ratelimit.py`), 10 POSTs/hora
+  por scope; excedido devolve `429` com
+  `templates/chamados/muitas_requisicoes.html`.
+- **Upload de planilhas `.xlsx`** com teto de **10 MB** nos três formulários
+  de importação (evita esgotar memória — o `.xlsx` é lido inteiro para a RAM).
+- **Evidências validadas por conteúdo (magic bytes)**, além da extensão:
+  imagens e PDF estritos; vídeo com check leve de container.
+- **`/media/` autenticado**: arquivos de evidência são servidos por
+  `serve_evidencia` (exige login, com proteção contra path traversal).
+- **`X-Content-Type-Options: nosniff` sempre ativo** (inclusive em DEV);
+  demais cabeçalhos de hardening (HSTS, cookies *secure*, SSL redirect)
+  ativos quando `DEBUG=False`.
+
 ## Regras de negócio importantes
 
 ### Acesso
@@ -89,9 +114,10 @@ Calculadas em `chamados.views._metricas_home` e formalmente testadas em
 Conforme `requirements.txt` e `sobreaviso/settings.py`:
 
 - **Python 3** (testado com 3.13 no ambiente do desenvolvedor).
-- **Django** `>=5.0,<5.2`.
+- **Django** `>=6.0,<6.1`.
 - **openpyxl** `>=3.1,<4.0` — leitura/geração de planilhas `.xlsx`.
 - **python-dotenv** `>=1.0,<2.0` — carga de variáveis a partir de `.env`.
+- **django-axes** `>=6.0,<7.0` — proteção contra força bruta no login.
 - **Banco de dados local**: SQLite (`db.sqlite3` na raiz). Migração para
   banco externo é planejada para fase posterior — ver "Limitações atuais
   / próximos passos".
@@ -122,9 +148,10 @@ chamados/
     models.py          # Ativo, Fornecedor, Chamado, AtualizacaoChamado, Obra
     views.py           # Views HTTP (home, listagens, importações, report...)
     importadores.py    # Leitura flexível de .xlsx (ativos/fornecedores/obras)
-    services.py        # Regras de report e geração de texto WhatsApp
+    services.py        # Regras de report, WhatsApp e validação de evidências
     forms.py           # Formulários (incluindo *ImportForm)
-    backends.py        # NomeSobrenomeBackend (login auxiliar)
+    backends.py        # NomeSobrenomeBackend + axes_username (login auxiliar)
+    ratelimit.py       # throttle_post: rate limiting de cadastro/reset por IP
     middleware.py      # LoginRequiredMiddleware (escopo de identificação)
     urls.py            # Rotas do app
     admin.py
@@ -171,8 +198,8 @@ Variáveis lidas em `sobreaviso/settings.py`:
 
 | Variável | Default | Função |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | `django-insecure-bootstrap-key-change-me-in-production` | Chave da sessão e CSRF. **Defina em produção.** |
-| `DJANGO_DEBUG` | `True` | `True`/`False`. Manter `False` em produção. |
+| `DJANGO_SECRET_KEY` | *(vazio)* | Chave de sessão/CSRF. **Obrigatória com `DEBUG=False`** — sem ela o boot falha (`ImproperlyConfigured`). Em DEV cai para chave insegura com aviso. |
+| `DJANGO_DEBUG` | `False` | `True`/`False`. Padrão **`False`** (seguro). Ativar explicitamente em DEV. |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Lista separada por vírgula. |
 | `EMAIL_BACKEND` | `django.core.mail.backends.console.EmailBackend` | Em DEV imprime o e-mail no terminal. Em PROD, trocar para SMTP. |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | `""` / `587` / `""` / `""` | Credenciais SMTP quando aplicável. |
@@ -257,7 +284,7 @@ python manage.py test chamados.tests -v 1
 ```
 
 No marco atual do repositório, a suíte `chamados.tests` está estabilizada
-com **343 testes**. Esse número é o estado registrado no último commit
+com **352 testes**. Esse número é o estado registrado no último commit
 validado — qualquer alteração futura deve ser verificada com os comandos
 acima.
 
@@ -282,6 +309,10 @@ Principais áreas cobertas:
   `ServiceRegistrarReportTests`, `FormatadoresReportTests`,
   `ObterTituloWhatsappTests`, `GerarTextoWhatsappTests`,
   `AtualizarReportViewTests`.
+- **Segurança**: limite de tamanho de upload (`AtivosImportTests`),
+  validação de evidência por conteúdo (`ServiceRegistrarReportTests`),
+  lockout de força bruta (`LoginRateLimitTests`) e rate limiting de
+  cadastro/reset (`ThrottlePostTests`).
 - **Views de listagem/CRUD**: `AtivosListViewTests`, `AtivoCreateViewTests`,
   `AtivoUpdateViewTests`, `AtivoDetailViewTests`,
   `FornecedoresViewTests`, `ChamadosListViewTests`,
@@ -331,14 +362,22 @@ E contém todos os artefatos versionados: `manage.py`, `requirements.txt`,
 
 ## Limitações atuais / próximos passos
 
-Esta seção lista pendências conhecidas. **Nada aqui está implementado.**
+Esta seção lista o estado de hardening e as pendências conhecidas. Onde um
+item já foi implementado, isso é dito explicitamente; o restante continua
+pendente.
 
-- **Hardening de produção pendente**:
-  - `DEBUG=False` por env e checklist do `manage.py check --deploy`.
-  - `SECRET_KEY` real injetada por ambiente.
-  - `ALLOWED_HOSTS` apertado para os hosts reais.
-  - HTTPS-only: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`,
-    `CSRF_COOKIE_SECURE`, HSTS.
+- **Hardening de produção**: já implementado o essencial — `DEBUG=False`
+  por padrão, `SECRET_KEY` obrigatória em produção (boot falha sem ela),
+  HTTPS-only condicional (`SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`,
+  `CSRF_COOKIE_SECURE`, HSTS) e `nosniff` sempre ativo. **Ainda pendente**:
+  apertar `ALLOWED_HOSTS` para os hosts reais e rodar o checklist do
+  `manage.py check --deploy` no ambiente de produção.
+- **Cache compartilhado para o rate limiting**: o throttle de cadastro/reset
+  (`chamados/ratelimit.py`) usa o cache do Django. Com o `LocMemCache` padrão
+  a contagem é **por processo** — em produção multi-worker, configure
+  `CACHES` com Redis/Memcached para a contagem valer entre os workers.
+- **Migrations do django-axes no deploy**: rodar `python manage.py migrate`
+  no ambiente real cria as tabelas `axes_*` usadas pelo lockout.
 - **Banco de produção**: migrar SQLite para PostgreSQL (ou equivalente),
   por exemplo via `DATABASE_URL`. SQLite atende a operação local
   mono-processo, não a uso multiusuário concorrente em produção.

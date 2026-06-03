@@ -7,6 +7,27 @@ from django.utils import timezone
 
 from .models import Ativo, Chamado, Fornecedor, Obra, StatusChamado
 
+# Teto de tamanho para upload de planilhas de importação. O importador lê o
+# .xlsx inteiro em memória (openpyxl + list(iter_rows)), então um arquivo muito
+# grande — ou um zip malicioso — poderia esgotar a RAM. 10 MB cobre com folga
+# planilhas operacionais reais (milhares de linhas) sem expor esse risco.
+TAMANHO_MAXIMO_IMPORT = 10 * 1024 * 1024  # 10 MB
+
+
+def _validar_arquivo_xlsx(arquivo):
+    """Validação compartilhada pelos *ImportForm: extensão, vazio e tamanho."""
+    if not arquivo.name.lower().endswith(".xlsx"):
+        raise forms.ValidationError(
+            "Envie uma planilha Excel válida no formato .xlsx."
+        )
+    if arquivo.size == 0:
+        raise forms.ValidationError("O arquivo enviado está vazio.")
+    if arquivo.size > TAMANHO_MAXIMO_IMPORT:
+        raise forms.ValidationError(
+            "O arquivo enviado excede o limite de 10 MB."
+        )
+    return arquivo
+
 
 class LoginForm(forms.Form):
     first_name = forms.CharField(
@@ -230,14 +251,7 @@ class AtivosImportForm(forms.Form):
     )
 
     def clean_arquivo(self):
-        arquivo = self.cleaned_data["arquivo"]
-        if not arquivo.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError(
-                "Envie uma planilha Excel válida no formato .xlsx."
-            )
-        if arquivo.size == 0:
-            raise forms.ValidationError("O arquivo enviado está vazio.")
-        return arquivo
+        return _validar_arquivo_xlsx(self.cleaned_data["arquivo"])
 
 
 class FornecedorForm(forms.ModelForm):
@@ -287,14 +301,7 @@ class FornecedoresImportForm(forms.Form):
     )
 
     def clean_arquivo(self):
-        arquivo = self.cleaned_data["arquivo"]
-        if not arquivo.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError(
-                "Envie uma planilha Excel válida no formato .xlsx."
-            )
-        if arquivo.size == 0:
-            raise forms.ValidationError("O arquivo enviado está vazio.")
-        return arquivo
+        return _validar_arquivo_xlsx(self.cleaned_data["arquivo"])
 
 
 class ChamadoForm(forms.ModelForm):
@@ -481,14 +488,7 @@ class ObrasImportForm(forms.Form):
     )
 
     def clean_arquivo(self):
-        arquivo = self.cleaned_data["arquivo"]
-        if not arquivo.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError(
-                "Envie uma planilha Excel válida no formato .xlsx."
-            )
-        if arquivo.size == 0:
-            raise forms.ValidationError("O arquivo enviado está vazio.")
-        return arquivo
+        return _validar_arquivo_xlsx(self.cleaned_data["arquivo"])
 
 
 class RegistrarReportForm(forms.Form):

@@ -30,6 +30,57 @@ TITULOS_WHATSAPP = {
 }
 
 
+# ── Validação de conteúdo de evidências (magic bytes) ──────
+# Defesa-em-profundidade: além da extensão, confere a assinatura do arquivo.
+# Imagens e PDF têm assinaturas limpas e são validadas estritamente. Vídeo usa
+# um check leve de container (ftyp/RIFF-AVI/EBML), tolerante às variações de
+# brand de celular, para não rejeitar uploads legítimos da operação.
+_BRANDS_HEIC = {
+    b"heic", b"heix", b"hevc", b"hevx", b"heim",
+    b"heis", b"hevm", b"hevs", b"mif1", b"msf1",
+}
+_ATOMS_MOV = {b"moov", b"mdat", b"free", b"wide", b"skip", b"pnot"}
+
+
+def _ler_assinatura(arquivo, n: int = 1024) -> bytes:
+    """Lê os primeiros bytes do upload e rebobina para não consumir o stream."""
+    try:
+        arquivo.seek(0)
+    except (AttributeError, OSError):
+        pass
+    cabecalho = arquivo.read(n) or b""
+    try:
+        arquivo.seek(0)
+    except (AttributeError, OSError):
+        pass
+    return cabecalho
+
+
+def _assinatura_valida(ext: str, head: bytes) -> bool:
+    """Confere se os magic bytes batem com a família da extensão informada."""
+    # Imagens + PDF: validação estrita.
+    if ext in ("jpg", "jpeg"):
+        return head[:3] == b"\xff\xd8\xff"
+    if ext == "png":
+        return head[:8] == b"\x89PNG\r\n\x1a\n"
+    if ext == "gif":
+        return head[:6] in (b"GIF87a", b"GIF89a")
+    if ext == "webp":
+        return head[:4] == b"RIFF" and head[8:12] == b"WEBP"
+    if ext == "heic":
+        return head[4:8] == b"ftyp" and head[8:12] in _BRANDS_HEIC
+    if ext == "pdf":
+        return b"%PDF-" in head[:1024]
+    # Vídeo: check leve de container, tolerante a variações.
+    if ext in ("mp4", "mov"):
+        return head[4:8] == b"ftyp" or head[4:8] in _ATOMS_MOV
+    if ext == "avi":
+        return head[:4] == b"RIFF" and head[8:12] == b"AVI "
+    if ext in ("mkv", "webm"):
+        return head[:4] == b"\x1aE\xdf\xa3"
+    return False
+
+
 def is_primeiro_report(chamado: Chamado) -> bool:
     """Indica se o chamado ainda nao possui nenhuma AtualizacaoChamado."""
     return not chamado.atualizacoes.exists()
@@ -132,6 +183,11 @@ def registrar_report(
                     raise ValueError(
                         f"Tipo de arquivo não permitido: '{arquivo.name}'. "
                         f"Permitidos: imagens, vídeos e PDF."
+                    )
+                if not _assinatura_valida(ext, _ler_assinatura(arquivo)):
+                    raise ValueError(
+                        f"O conteúdo de '{arquivo.name}' não corresponde à "
+                        f"extensão .{ext}. Envie um arquivo válido."
                     )
                 ev = Evidencia(atualizacao=atualizacao, ordem=ordem)
                 ev.arquivo = arquivo

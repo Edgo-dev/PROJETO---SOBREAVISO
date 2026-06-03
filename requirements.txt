@@ -1,3 +1,4 @@
-Django>=5.0,<5.2
+Django>=6.0,<6.1
 python-dotenv>=1.0,<2.0
 openpyxl>=3.1,<4.0
+django-axes>=6.0,<7.0

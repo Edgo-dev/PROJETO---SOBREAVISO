@@ -24,7 +24,6 @@ class LoginRequiredMiddleware:
         "/recuperar-senha/",
         "/admin/",
         "/static/",
-        "/media/",
         "/favicon.ico",
     )
 

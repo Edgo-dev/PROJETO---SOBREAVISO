@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from . import views
+from .ratelimit import throttle_post
 
 app_name = "chamados"
 
@@ -13,11 +14,13 @@ urlpatterns = [
     path("cadastro/", views.register_view, name="register"),
     path(
         "recuperar-senha/",
-        auth_views.PasswordResetView.as_view(
-            template_name="chamados/password_reset.html",
-            email_template_name="chamados/password_reset_email.html",
-            subject_template_name="chamados/password_reset_subject.txt",
-            success_url=reverse_lazy("chamados:password_reset_done"),
+        throttle_post("reset", limite_padrao=10, janela_padrao=3600)(
+            auth_views.PasswordResetView.as_view(
+                template_name="chamados/password_reset.html",
+                email_template_name="chamados/password_reset_email.html",
+                subject_template_name="chamados/password_reset_subject.txt",
+                success_url=reverse_lazy("chamados:password_reset_done"),
+            )
         ),
         name="password_reset",
     ),

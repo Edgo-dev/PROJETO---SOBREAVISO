@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from openpyxl import Workbook
@@ -644,6 +644,20 @@ class AtivosImportTests(TestCase):
         form = AtivosImportForm(files={"arquivo": arquivo})
         self.assertFalse(form.is_valid())
         self.assertIn("formato .xlsx", str(form.errors["arquivo"]))
+
+    def test_form_rejeita_arquivo_acima_do_limite_de_tamanho(self):
+        from .forms import TAMANHO_MAXIMO_IMPORT, AtivosImportForm
+
+        arquivo = SimpleUploadedFile(
+            "parque.xlsx",
+            b"x" * (TAMANHO_MAXIMO_IMPORT + 1),
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+        )
+        form = AtivosImportForm(files={"arquivo": arquivo})
+        self.assertFalse(form.is_valid())
+        self.assertIn("10 MB", str(form.errors["arquivo"]))
 
     def test_importacao_cria_ativo_novo(self):
         self._importar(
@@ -1677,6 +1691,54 @@ class ServiceRegistrarReportTests(TestCase):
         self.chamado.refresh_from_db()
         self.assertEqual(atualizacao.criado_por, usuario)
         self.assertEqual(self.chamado.atualizado_por, usuario)
+
+    def test_evidencia_png_valida_e_aceita(self):
+        from .services import registrar_report
+
+        png = SimpleUploadedFile(
+            "foto.png",
+            b"\x89PNG\r\n\x1a\n" + b"\x00" * 32,
+            content_type="image/png",
+        )
+        atualizacao = registrar_report(
+            self.chamado,
+            texto_atualizacao="Com evidência.",
+            evidencias=[png],
+        )
+        self.assertEqual(atualizacao.evidencias.count(), 1)
+
+    def test_evidencia_pdf_valido_e_aceito(self):
+        from .services import registrar_report
+
+        pdf = SimpleUploadedFile(
+            "laudo.pdf",
+            b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n",
+            content_type="application/pdf",
+        )
+        atualizacao = registrar_report(
+            self.chamado,
+            texto_atualizacao="Com laudo.",
+            evidencias=[pdf],
+        )
+        self.assertEqual(atualizacao.evidencias.count(), 1)
+
+    def test_evidencia_com_conteudo_falso_e_rejeitada(self):
+        from .services import registrar_report
+
+        # Extensão permitida (.png), mas conteúdo não é PNG → deve recusar.
+        falso = SimpleUploadedFile(
+            "malicioso.png",
+            b"<html><script>alert(1)</script></html>",
+            content_type="image/png",
+        )
+        with self.assertRaises(ValueError):
+            registrar_report(
+                self.chamado,
+                texto_atualizacao="Tentativa.",
+                evidencias=[falso],
+            )
+        # Nada deve ter sido gravado (transação revertida).
+        self.assertFalse(self.chamado.atualizacoes.exists())
 
 
 class ChamadoCreatePersistenciaTests(_LoginClienteMixin, TestCase):
@@ -4169,4 +4231,88 @@ class ImportacaoValidaHttpTests(TestCase):
         self.assertEqual(Ativo.objects.count(), antes_ativos)
         self.assertFalse(
             Ativo.objects.filter(ativo_prisma="HTTP-ANON-1").exists()
+        )
+
+
+@override_settings(AXES_FAILURE_LIMIT=3, AXES_RESET_ON_SUCCESS=True)
+class LoginRateLimitTests(TestCase):
+    """django-axes: bloqueia força bruta no login por (usuário + IP)."""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from axes.utils import reset
+
+        # Limpa tentativas de execuções anteriores (isolamento entre testes).
+        reset()
+        self.User = get_user_model()
+        self.senha = "SenhaForte!234"
+        self.user = self.User.objects.create_user(
+            username="op_rl",
+            email="op@rl.com",
+            first_name="Rate",
+            last_name="Limit",
+            password=self.senha,
+        )
+
+    def tearDown(self):
+        from axes.utils import reset
+
+        reset()
+
+    def _login(self, password):
+        return self.client.post(
+            reverse("chamados:login"),
+            {"first_name": "Rate", "last_name": "Limit", "password": password},
+        )
+
+    def test_login_correto_funciona_sem_bloqueio(self):
+        resp = self._login(self.senha)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn(reverse("chamados:home"), resp["Location"])
+
+    def test_excesso_de_tentativas_bloqueia_ate_a_senha_correta(self):
+        for _ in range(3):
+            self._login("senha-errada")
+
+        # Mesmo com a senha correta, o acesso permanece bloqueado.
+        resp = self._login(self.senha)
+        self.assertNotEqual(resp.status_code, 302)
+        self.assertFalse(resp.wsgi_request.user.is_authenticated)
+        conteudo = resp.content.decode("utf-8", errors="ignore").lower()
+        self.assertIn("tentativas", conteudo)
+
+
+@override_settings(THROTTLE_CADASTRO_LIMIT=2, THROTTLE_RESET_LIMIT=2)
+class ThrottlePostTests(TestCase):
+    """Rate limiting por IP em cadastro e recuperação de senha (POST)."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # isolamento: o cache não é revertido entre testes
+
+    def tearDown(self):
+        from django.core.cache import cache
+
+        cache.clear()
+
+    def test_cadastro_bloqueia_apos_o_limite(self):
+        url = reverse("chamados:register")
+        # Dados inválidos de propósito: a view devolve 200 (erros de form) e
+        # o throttle conta cada POST. Limite=2 → 3º POST é bloqueado.
+        self.assertEqual(self.client.post(url, {}).status_code, 200)
+        self.assertEqual(self.client.post(url, {}).status_code, 200)
+        self.assertEqual(self.client.post(url, {}).status_code, 429)
+
+    def test_get_no_cadastro_nao_e_limitado(self):
+        url = reverse("chamados:register")
+        for _ in range(5):
+            self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_reset_senha_bloqueia_apos_o_limite(self):
+        url = reverse("chamados:password_reset")
+        self.assertIn(self.client.post(url, {"email": "x@y.com"}).status_code, (200, 302))
+        self.assertIn(self.client.post(url, {"email": "x@y.com"}).status_code, (200, 302))
+        self.assertEqual(
+            self.client.post(url, {"email": "x@y.com"}).status_code, 429
         )

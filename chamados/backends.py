@@ -4,6 +4,27 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 
 
+def axes_username(request, credentials=None):
+    """Identidade usada pelo django-axes para contabilizar tentativas.
+
+    O login deste sistema e por (first_name, last_name), nao por 'username',
+    entao compomos a chave a partir desses campos. Procura primeiro nas
+    credentials passadas ao authenticate() e cai para o POST quando ausentes.
+    """
+    fontes = []
+    if credentials:
+        fontes.append(credentials)
+    if request is not None and getattr(request, "POST", None):
+        fontes.append(request.POST)
+    for fonte in fontes:
+        nome = (fonte.get("first_name") or "").strip()
+        sobrenome = (fonte.get("last_name") or "").strip()
+        composto = f"{nome} {sobrenome}".strip()
+        if composto:
+            return composto.lower()
+    return None
+
+
 class NomeSobrenomeBackend(ModelBackend):
     """Autentica por (first_name, last_name, password).
 

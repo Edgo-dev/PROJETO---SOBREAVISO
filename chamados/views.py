@@ -42,6 +42,7 @@ from .importadores import (
     importar_obras_excel,
 )
 from .models import Ativo, Chamado, Fornecedor, Obra, StatusChamado
+from .ratelimit import throttle_post
 
 ATIVOS_POR_PAGINA = 20
 CHAMADOS_POR_PAGINA = 20
@@ -795,14 +796,18 @@ def atualizar_report_list(request):
     ).order_by("_ordem_status", "-data_abertura", "-criado_em")
 
     total = queryset.count()
+    # ATENÇÃO: primeiro_report_pendente usa Q(atualizacoes__isnull=True) que
+    # força um LEFT JOIN na tabela atualizacoes. Incluí-lo no mesmo aggregate()
+    # multiplica as linhas de chamados com N atualizacoes, inflando todos os
+    # outros contadores. Calculado em query separada para isolar o JOIN.
     contadores_status = queryset.aggregate(
         abertos=Count("id", filter=Q(status=StatusChamado.ABERTO)),
         pendentes=Count("id", filter=Q(status=StatusChamado.PENDENTE)),
         concluidos=Count("id", filter=Q(status=StatusChamado.CONCLUIDO)),
         cancelados=Count("id", filter=Q(status=StatusChamado.CANCELADO)),
         nao_emergenciais=Count("id", filter=Q(status=StatusChamado.NAO_EMERGENCIAL)),
-        primeiro_report_pendente=Count("id", filter=Q(atualizacoes__isnull=True)),
     )
+    primeiro_report_pendente = queryset.filter(atualizacoes__isnull=True).count()
     contadores = {
         "total": total,
         "abertos": contadores_status["abertos"],
@@ -810,7 +815,7 @@ def atualizar_report_list(request):
         "concluidos": contadores_status["concluidos"],
         "cancelados": contadores_status["cancelados"],
         "nao_emergenciais": contadores_status["nao_emergenciais"],
-        "primeiro_report_pendente": contadores_status["primeiro_report_pendente"],
+        "primeiro_report_pendente": primeiro_report_pendente,
     }
 
     paginator = Paginator(queryset, ATUALIZAR_REPORT_POR_PAGINA)
@@ -1434,11 +1439,14 @@ def login_view(request):
     if request.method == "POST":
         form = LoginForm(request.POST)
         if form.is_valid():
+            credenciais = {
+                "first_name": form.cleaned_data["first_name"],
+                "last_name": form.cleaned_data["last_name"],
+            }
             user = authenticate(
                 request,
-                first_name=form.cleaned_data["first_name"],
-                last_name=form.cleaned_data["last_name"],
                 password=form.cleaned_data["password"],
+                **credenciais,
             )
             if user is not None:
                 auth_login(request, user)
@@ -1448,6 +1456,9 @@ def login_view(request):
                 if next_url and next_url.startswith("/") and not next_url.startswith("//"):
                     return redirect(next_url)
                 return redirect("chamados:home")
+            # Credenciais inválidas. Quando o limite de tentativas é estourado,
+            # o AxesMiddleware intercepta e responde com o template de lockout
+            # antes de chegar aqui — por isso não tratamos o bloqueio na view.
             form.add_error(None, "Nome, sobrenome ou senha incorretos.")
     else:
         form = LoginForm()
@@ -1466,6 +1477,7 @@ def logout_view(request):
 
 
 @require_http_methods(["GET", "POST"])
+@throttle_post("cadastro", limite_padrao=10, janela_padrao=3600)
 def register_view(request):
     """Auto-cadastro: nome + sobrenome + e-mail + senha (com confirmacao)."""
     if request.user.is_authenticated:

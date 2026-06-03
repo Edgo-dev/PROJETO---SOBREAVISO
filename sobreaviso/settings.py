@@ -5,6 +5,7 @@ Bootstrap inicial. As regras de negocio de chamados emergenciais serao adicionad
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -14,20 +15,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
+# DEBUG — padrão False; ativar explicitamente em DEV
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+
 # SECRET_KEY — obrigatória em produção
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
-    _default_key = "django-insecure-dev-only-change-me"
+    if not DEBUG:
+        # Em produção (DEBUG=False) uma chave previsível compromete sessões,
+        # CSRF e tokens de reset de senha. Falha cedo em vez de subir inseguro.
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY não definida. "
+            "Defina uma chave forte por variável de ambiente em produção."
+        )
     import warnings
     warnings.warn(
         "DJANGO_SECRET_KEY não definida. "
         "Usando chave insegura — NUNCA use em produção.",
         stacklevel=2,
     )
-    SECRET_KEY = _default_key
-
-# DEBUG — padrão False; ativar explicitamente em DEV
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+    SECRET_KEY = "django-insecure-dev-only-change-me"
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -35,7 +42,12 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-# ── Hardening de produção ─────────────────────────────────
+# ── Hardening sempre ativo (inofensivo em DEV) ────────────
+# nosniff impede o navegador de reinterpretar o Content-Type de arquivos
+# servidos por serve_evidencia; vale também em DEV, onde antes ficava ausente.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# ── Hardening de produção (quebra http local, fica condicional) ──
 if not DEBUG:
     SECURE_SSL_REDIRECT            = True
     SECURE_HSTS_SECONDS            = 31536000   # 1 ano
@@ -43,7 +55,6 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD            = True
     SESSION_COOKIE_SECURE          = True
     CSRF_COOKIE_SECURE             = True
-    SECURE_CONTENT_TYPE_NOSNIFF    = True
     SECURE_REFERRER_POLICY         = "strict-origin-when-cross-origin"
     X_FRAME_OPTIONS                = "DENY"
 
@@ -54,6 +65,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "axes",
     "chamados",
 ]
 
@@ -66,12 +78,27 @@ MIDDLEWARE = [
     "chamados.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AxesMiddleware deve ser o último: observa o resultado da autenticação.
+    "axes.middleware.AxesMiddleware",
 ]
 
 AUTHENTICATION_BACKENDS = [
+    # AxesStandaloneBackend deve vir primeiro: bloqueia antes de checar a senha.
+    "axes.backends.AxesStandaloneBackend",
     "chamados.backends.NomeSobrenomeBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
+
+# ── django-axes: proteção contra força bruta no login ──────
+# Lockout por combinação (usuário + IP) para não travar um escritório inteiro
+# atrás de um único IP quando só um operador erra a senha.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=30)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+AXES_USERNAME_CALLABLE = "chamados.backends.axes_username"
+# Quando bloqueado, o AxesMiddleware substitui a resposta por este template.
+AXES_LOCKOUT_TEMPLATE = "chamados/lockout.html"
 
 LOGIN_URL = "chamados:login"
 LOGIN_REDIRECT_URL = "chamados:home"
