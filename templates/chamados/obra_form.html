@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{% if modo == "novo" %}Nova obra{% else %}Editar obra · {{ obra.ativo.nome_site }}{% endif %}{% endblock %}
+{% block synops_title %}OBRAS{% endblock %}
 {% block page_title %}{% if modo == "novo" %}Nova obra{% else %}Editar obra{% endif %}{% endblock %}
 
 {% block content %}

@@ -2595,7 +2595,7 @@ class AtualizarReportViewTests(_LoginClienteMixin, TestCase):
             response,
             f'href="{reverse("chamados:atualizar_report_list")}"',
         )
-        self.assertContains(response, ">Atualizar Report</span>")
+        self.assertContains(response, ">Relatórios</span>")
 
     def test_nenhuma_url_wa_me_aparece_nos_templates(self):
         templates_dir = Path(__file__).resolve().parent.parent / "templates"

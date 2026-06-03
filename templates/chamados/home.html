@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Sistema de Sobreaviso - Inicio{% endblock %}
+{% block synops_title %}SISTEMA DE SOBREAVISO{% endblock %}
 {% block page_title %}{% endblock %}
 
 {% block content %}
@@ -20,25 +21,58 @@
     </div>
 
     <section class="home-hero">
-        <div class="home-hero-content">
-            <span class="home-kicker"><span class="home-kicker-dot"></span> Operação emergencial</span>
-            <h2>Sistema de Sobreaviso</h2>
-            <p>Gestão operacional de chamados emergenciais, ativos, fornecedores e acompanhamento de obras.</p>
+        <div class="home-cityscape" aria-hidden="true">
+            <svg width="210" height="130" viewBox="0 0 210 130" fill="none" class="cityscape-svg">
+                <rect x="8" y="36" width="32" height="94" rx="2" fill="none" stroke="#8a5cf6" stroke-width="1.2" opacity="0.7"/>
+                <rect x="14" y="42" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="24" y="42" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="14" y="54" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="24" y="54" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="14" y="66" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="24" y="66" width="6" height="6" fill="#8a5cf6" opacity="0.35"/>
+                <rect x="50" y="4" width="52" height="126" rx="2" fill="none" stroke="#9b6fff" stroke-width="1.4" opacity="0.8"/>
+                <rect x="56" y="12" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="70" y="12" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="84" y="12" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="56" y="26" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="70" y="26" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="84" y="26" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="56" y="40" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="70" y="40" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="84" y="40" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="56" y="54" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="84" y="54" width="8" height="8" fill="#9b6fff" opacity="0.4"/>
+                <rect x="112" y="52" width="36" height="78" rx="2" fill="none" stroke="#7b5cf6" stroke-width="1.2" opacity="0.65"/>
+                <rect x="118" y="60" width="6" height="6" fill="#7b5cf6" opacity="0.35"/>
+                <rect x="130" y="60" width="6" height="6" fill="#7b5cf6" opacity="0.35"/>
+                <rect x="118" y="72" width="6" height="6" fill="#7b5cf6" opacity="0.35"/>
+                <rect x="130" y="72" width="6" height="6" fill="#7b5cf6" opacity="0.35"/>
+                <rect x="160" y="28" width="42" height="102" rx="2" fill="none" stroke="#8a5cf6" stroke-width="1.3" opacity="0.72"/>
+                <rect x="166" y="36" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <rect x="178" y="36" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <rect x="190" y="36" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <rect x="166" y="50" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <rect x="178" y="50" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <rect x="190" y="50" width="7" height="7" fill="#8a5cf6" opacity="0.38"/>
+                <line x1="0" y1="129" x2="210" y2="129" stroke="url(#cityline)" stroke-width="1.5"/>
+                <defs>
+                    <linearGradient id="cityline" x1="0" y1="0" x2="210" y2="0">
+                        <stop offset="0%" stop-color="transparent"/>
+                        <stop offset="30%" stop-color="#66d7ff" stop-opacity="0.5"/>
+                        <stop offset="70%" stop-color="#8a5cf6" stop-opacity="0.5"/>
+                        <stop offset="100%" stop-color="transparent"/>
+                    </linearGradient>
+                </defs>
+            </svg>
         </div>
 
-        <div class="home-cityscape" aria-hidden="true">
-            <span class="building building-one"></span>
-            <span class="building building-two"></span>
-            <span class="building building-three"></span>
-            <span class="building building-four"></span>
-            <span class="city-line"></span>
-        </div>
+        <div class="hero-divider" aria-hidden="true"></div>
 
         <div class="home-hero-metrics">
-            <div class="hero-metric">
+            <div class="hero-metric hero-metric--assets">
                 <header class="hero-metric-head">
                     <span class="hero-metric-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 13v.01"/><path d="M9 17v.01"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
                     </span>
                     <span class="hero-metric-label">Ativos</span>
                 </header>
@@ -53,10 +87,10 @@
                     </div>
                 </div>
             </div>
-            <div class="hero-metric">
+            <div class="hero-metric hero-metric--pending">
                 <header class="hero-metric-head">
-                    <span class="hero-metric-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span class="hero-metric-icon hero-metric-icon--warn" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </span>
                     <span class="hero-metric-label">Pendentes</span>
                 </header>
@@ -71,10 +105,10 @@
                     </div>
                 </div>
             </div>
-            <div class="hero-metric">
+            <div class="hero-metric hero-metric--done">
                 <header class="hero-metric-head">
-                    <span class="hero-metric-icon" aria-hidden="true">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="hero-metric-icon hero-metric-icon--ok" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </span>
                     <span class="hero-metric-label">Concluídos</span>
                 </header>
@@ -90,6 +124,7 @@
                 </div>
             </div>
         </div>
+        <div class="home-hero-accent-bar" aria-hidden="true"></div>
     </section>
 
     <section class="home-section">
