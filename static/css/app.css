@@ -86,7 +86,10 @@ a {
 
 .layout {
     display: flex;
-    min-height: 100vh;
+    /* Abaixo do header fixo (body tem padding-top: var(--sn-header-h)).
+       Usar 100vh aqui somava a altura do header e gerava 60px de rolagem
+       inútil em todas as telas internas. */
+    min-height: calc(100vh - var(--sn-header-h));
 }
 
 .sidebar {
@@ -289,7 +292,10 @@ a {
 }
 
 .main-content:has(.home-dashboard) {
-    min-height: calc(100vh - 32px);
+    /* Desconta o header fixo (var --sn-header-h) e o padding vertical do .main
+       (20px topo + 12px base = 32px). Sem o header no cálculo, sobravam 60px
+       que geravam uma barra de rolagem inútil mesmo com tudo visível. */
+    min-height: calc(100vh - var(--sn-header-h) - 32px);
 }
 
 .home-page {
@@ -302,56 +308,6 @@ a {
     display: flex;
     flex-direction: column;
     gap: 18px;
-}
-
-.home-topbar {
-    align-items: center;
-    display: flex;
-    gap: 14px;
-    justify-content: flex-end;
-    min-height: 34px;
-}
-
-.home-notification {
-    align-items: center;
-    color: #d7ccff;
-    display: inline-flex;
-    font-size: 18px;
-    height: 26px;
-    justify-content: center;
-    position: relative;
-    width: 26px;
-}
-
-.home-notification::after {
-    background-color: #f6c246;
-    border: 2px solid #070a17;
-    border-radius: 50%;
-    content: "";
-    height: 7px;
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    width: 7px;
-}
-
-.home-user-chip {
-    align-items: center;
-    color: #f8f6ff;
-    display: inline-flex;
-    font-size: 14px;
-    gap: 8px;
-}
-
-.home-avatar {
-    align-items: center;
-    background: linear-gradient(180deg, #fff4e6, #f5a66d);
-    border-radius: 50%;
-    display: inline-flex;
-    height: 26px;
-    justify-content: center;
-    overflow: hidden;
-    width: 26px;
 }
 
 .home-hero {
@@ -2903,22 +2859,6 @@ a {
 }
 .sidebar-profile-name {
     color: rgba(245, 242, 255, 0.92);
-}
-
-.home-notification svg {
-    display: block;
-    height: 18px;
-    width: 18px;
-}
-.home-user-chip .home-avatar svg {
-    display: block;
-    height: 14px;
-    width: 14px;
-}
-.home-user-chip > svg {
-    display: inline-block;
-    height: 12px;
-    width: 12px;
 }
 
 .hero-metric-icon svg {
