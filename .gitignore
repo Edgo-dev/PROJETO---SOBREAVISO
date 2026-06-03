@@ -43,3 +43,7 @@ Desktop.ini
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Ferramentas locais do Claude Code (não são conteúdo do projeto)
+.claude/
+memory/
